@@ -1,0 +1,16 @@
+
+{
+    "name": "verein",
+    "version": "1.0.0",
+    "private": true,
+    "workspaces": [
+      "additives/*/frontend",
+      "fluid/frontend"
+    ],
+    "scripts": {
+      "dev": "vite dev"
+    },
+    "devDependencies": {
+      "vite": "^8.0.0"
+    }
+}

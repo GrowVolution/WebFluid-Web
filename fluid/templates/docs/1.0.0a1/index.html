@@ -1,0 +1,99 @@
+{% extends "docs/base_overview.html" %}
+{% from "docs/partials/_callout.html" import warning %}
+{% from "docs/partials/_overview.html" import feature, bug %}
+
+{% block lead %}
+    This is the first public alpha of WebFluid. The core runtime, the CLI, the Additive system and the
+    full battery set are in place. APIs are settling but may still shift before the stable
+    release, so pin your version while the alpha runs.
+{% endblock %}
+
+{% block features %}
+    <div class="doc-list">
+        {{ feature(
+            "Async-first runtime with sync counterparts",
+            """
+                Every battery exposes an async API and a matching synchronous one. The SQLAlchemy
+                extension, for example, gives you both <code>executor()</code> and
+                <code>async_executor()</code> over the same bind set.
+            """
+        ) }}
+
+        {{ feature(
+            "Additive module system",
+            """
+                Build features as self-contained subapps with their own routes, templates and static
+                files. Base Additives can be extended, and a <code>manifest.json</code> declares id,
+                version and requirements for Hub distribution.
+            """
+        ) }}
+
+        {{ feature(
+            "CLI-first workflow",
+            """
+                The <code>wf</code> CLI scaffolds projects, manages Additives and runs the
+                config-driven runtime. Features and modules toggle through env flags.
+            """
+        ) }}
+
+        {{ feature(
+            "Bundled Node and Tailwind",
+            """
+                A single (dev) server drives SSR Jinja2, API-only modules, or parallel Vite based frontends.
+                Standalone Node and the Tailwind CLI download on first use if necessary.
+                The Framework orchestrates them for you.
+            """
+        ) }}
+
+        {{ feature(
+            "Bundled Node and Tailwind",
+            """
+                A single (dev) server drives SSR Jinja2, API-only modules, or parallel Vite based frontends.
+                Standalone Node and the Tailwind CLI download on first use if necessary.
+                The Framework orchestrates them for you.
+            """
+        ) }}
+
+        {{ feature(
+            "Stable HMR across frontend modules",
+            """
+                Hot module replacement runs more or less cleanly across multiple frontends. An integrated
+                proxy utility manages the communication between the frontend and the Vite dev server.
+            """
+        ) }}
+
+        {{ feature(
+            "Batteries: mailer, JWT, i18n, cache, migrations",
+            """
+                A built-in mailer, a JWT manager with rotating cached secrets, db-backed and
+                runtime-cached i18n, a cache that swaps between in-memory and Redis behind one API, and
+                migrations wired to the SQLAlchemy extension.
+            """
+        ) }}
+    </div>
+{% endblock %}
+
+{% block fixes %}
+    {{ warning("This is the first public release, so there are no prior bugs fixed.") }}
+{% endblock %}
+
+{% block bugs %}
+    <div class="doc-list">
+        {{ bug(
+            "Additive module system",
+            """
+                Build features as self-contained subapps with their own routes, templates and static
+                files. Base Additives can be extended, and a <code>manifest.json</code> declares id,
+                version and requirements for Hub distribution.
+            """
+        ) }}
+    </div>
+{% endblock %}
+
+{% block breaks %}{{
+    warning("""
+        This is the first public release, so there is no prior version to break against. As an alpha,
+        APIs may still change between alpha builds. Watch this page on each release for the running list
+        of breaking changes.
+    """)
+}}{% endblock %}

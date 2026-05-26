@@ -1,0 +1,39 @@
+{% macro feature(title, description) %}
+    <div class="doc-item">
+        <span class="mk mk-new">+</span>
+        <div>
+            <h4>{{ title }}</h4>
+            <p>{{ description|safe }}</p>
+        </div>
+    </div>
+{% endmacro %}
+
+{% macro fix(title, description) %}
+    <div class="doc-item">
+        <span class="mk mk-fix">✓</span>
+        <div>
+            <h4>{{ title }}</h4>
+            <p>{{ description|safe }}</p>
+        </div>
+    </div>
+{% endmacro %}
+
+{% macro bug(title, description) %}
+    <div class="doc-item">
+        <span class="mk mk-bug">!</span>
+        <div>
+            <h4>{{ title }}</h4>
+            <p>{{ description|safe }}</p>
+        </div>
+    </div>
+{% endmacro %}
+
+{% macro break(title, description) %}
+    <div class="doc-item">
+        <span class="mk mk-break">✕</span>
+        <div>
+            <h4>{{ title }}</h4>
+            <p>{{ description|safe }}</p>
+        </div>
+    </div>
+{% endmacro %}

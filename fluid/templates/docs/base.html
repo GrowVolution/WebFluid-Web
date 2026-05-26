@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "partials/_footer.html" import site_footer %}
+
+{% block nav %}
+    <div class="web docs docs-topbar-wrap">
+        <div class="docs-topbar">
+            <a class="docs-brand" href="/">
+                <img src="{{ url_for(wf_static, path='img/logo.png') }}" alt="Logo">
+                <span>Fluid Docs</span>
+            </a>
+
+            <div class="docs-topbar-links">
+                <a href="{{ home }}" class="docs-topbar-link">Home</a>
+                <a href="https://github.com/GrowVolution/WebFluid" class="docs-topbar-link">GitHub</a>
+                <button class="docs-menu-toggle" onclick="document.body.classList.toggle('docs-drawer-open')" aria-label="Toggle menu">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="web docs">
+        <div class="docs-shell">
+            {% include "partials/_nav.html" %}
+            <div class="docs-scrim" onclick="document.body.classList.remove('docs-drawer-open')"></div>
+
+            <div class="docs-content">
+                {% block docs_content %}{% endblock %}
+            </div>
+        </div>
+
+        {{ site_footer() }}
+    </div>
+{% endblock %}
