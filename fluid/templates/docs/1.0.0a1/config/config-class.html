@@ -1,0 +1,125 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+
+{% block title %}Config Classes — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Configuration</span>
+        <h1 class="doc-h1">Config Classes</h1>
+        <p class="doc-lead">
+            Since app configs are used as the CLIs entrypoint into an app and a replacement of
+            environment files, config classes are used alongside them to configure and influence
+            the runtime of your app.
+        </p>
+
+        <h2>The core concept</h2>
+        <p>
+            Config classes define and / or overwrite the settings of your app. One example for that
+            is the <code>SESSION_COOKIE_SECURE</code> variable that caused the warning inside the log when we were
+            <a href="/v/{{ version }}/get-started">setting up our first app</a>. Those settings are set up using
+            config classes, then parsed when your Fluid instance gets initialized and can be accessed via the
+            <code>fluid.config</code> dict later on.
+        </p>
+
+        <h2>Registering your first config</h2>
+        <p>
+            You've got multiple options on how to register a config class. All of them rely on the
+            <code>register_config</code> decorator. To keep things simple, we will use our <code>main.py</code>
+            file from getting started and expand it with a minimal example of registering a config:
+        </p>
+
+        {{ code(
+                "main.py", "python",
+                '''from webfluid import Fluid
+from webfluid.core.config import register_config
+from fastapi.responses import HTMLResponse
+
+
+@register_config(10)
+class MyConfig:
+    SESSION_COOKIE_SECURE = True
+
+fluid = Fluid(__name__)
+
+
+@fluid.get("/", response_class=HTMLResponse)
+async def home():
+    return await fluid.render(
+        "index.html",
+        title="Hello World!",
+        name="my friend"
+    )
+
+
+@fluid.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
+if __name__ == "__main__":
+    fluid.mix()'''
+        ) }}
+
+        <h3>What just happened</h3>
+        <p>There are two major details we need to take a look at:</p>
+        <ul>
+            <li>
+                We've registered the config <strong>before</strong> the app will get initialized.
+                This is important because the decorator function must be executed before the app
+                gets initialized. Otherwise, your config will never be parsed.
+            </li>
+            <li>
+                There is a number passed as a parameter to the decorator. This is the priority of
+                the config. If you have multiple configs registered, the one with the highest priority
+                will overwrite the others. Default (if noting is passed) is 1. Possible values are
+                1 to 10. So 10 is the highest possible priority.
+            </li>
+        </ul>
+
+        <h2>The second way to register your config</h2>
+        <p>
+            Now you may not want to ensure manually that the config registration decorator is executed
+            before initializing your app. Thankfully, there's some magic happening behind the scenes.
+            Because if you just create a <code>config.py</code> file inside the fluid directory, you
+            can outsource the registration of your to the initialization process.
+        </p>
+
+        <h2>Important config values</h2>
+        <p>
+            When configuring your app, there are some important settings you need to know:
+        </p>
+        <ul>
+            <li>
+                <code>APP_CONFIG</code> — A dictionary that stores the FastAPI
+                initialization parameters as keyword arguments. Default (if not defined in
+                a config class) is <code>{ "title": "WebFluid Application", "version": "1.0.0" }</code>.
+            </li>
+            <li>
+                <code>APP_FRONTEND</code> — The Frontend configuration dictionary of your
+                main app. More about that in the "Frontend" chapter.
+            </li>
+            <li>
+                <code>SESSION_COOKIE_*</code> — There are three SessionMiddleware configuration
+                values: NAME, SAMESITE and SECURE. NAME and SAMESITE are string values, SECURE
+                is a boolean. Default values are <code>"session"</code>, <code>"lax"</code> and
+                <code>False</code>.
+            </li>
+            <li>
+                <code>PROXY_FIX</code> — Is set to true this your app will be cast into a
+                ProxyHeadersMiddleware and the <code>fluid.asgi_app</code> property will
+                return a ProxyHeadersMiddleware instance.
+            </li>
+            <li>
+                <code>RATELIMIT_*</code> — Three values for setting up ratelimiting:
+                ENABLED, STORAGE_URI and DEFAULT. WebFluid uses slowapi for ratelimiting.
+                Default values are <code>True</code>, <code>f"{os.getenv('REDIS_URI', 'redis://localhost:6379')}/1"</code>
+                and <code>["500/day", "100/hour"]</code>.
+            </li>
+            <li>
+                Further configuration values are used by the framework extensions to load their settings.
+                More about them and their defaults in the "Extensions" chapter.
+            </li>
+        </ul>
+    </article>
+{% endblock %}

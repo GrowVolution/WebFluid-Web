@@ -9,6 +9,7 @@ migrate/
 translations/
 dist/
 logs/
+myapp/
 
 [files]
 home.ini
