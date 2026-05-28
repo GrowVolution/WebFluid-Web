@@ -11,18 +11,18 @@
 {% block features %}
     <div class="doc-list">
         {{ feature(
-            "Async-first runtime with sync counterparts",
+            "Integrated runtime orchestration",
             """
-                Every battery exposes an async API and a matching synchronous one. The SQLAlchemy
-                extension, for example, gives you both <code>executor()</code> and
-                <code>async_executor()</code> over the same bind set.
+               Your application has its own lifecycle, going through startup and shutdown hooks
+               as well as the serving stage entirely self-managed. It all initiates by calling
+               just <code>fluid.mix()</code> (assuming <code>fluid = Fluid(__name__)</code>).
             """
         ) }}
 
         {{ feature(
             "Additive module system",
             """
-                Build features as self-contained subapps with their own routes, templates and static
+                Build features as self-contained sub apps with their own routes, templates and static
                 files. Base Additives can be extended, and a <code>manifest.json</code> declares id,
                 version and requirements for Hub distribution.
             """
@@ -46,16 +46,7 @@
         ) }}
 
         {{ feature(
-            "Bundled Node and Tailwind",
-            """
-                A single (dev) server drives SSR Jinja2, API-only modules, or parallel Vite based frontends.
-                Standalone Node and the Tailwind CLI download on first use if necessary.
-                The Framework orchestrates them for you.
-            """
-        ) }}
-
-        {{ feature(
-            "Stable HMR across frontend modules",
+            "HMR across frontend modules",
             """
                 Hot module replacement runs more or less cleanly across multiple frontends. An integrated
                 proxy utility manages the communication between the frontend and the Vite dev server.
@@ -70,6 +61,15 @@
                 migrations wired to the SQLAlchemy extension.
             """
         ) }}
+
+        {{ feature(
+            "Async-first runtime with sync counterparts",
+            """
+                Every battery exposes an async API and a matching synchronous one. The SQLAlchemy
+                extension, for example, gives you both <code>executor()</code> and
+                <code>async_executor()</code> over the same bind set.
+            """
+        ) }}
     </div>
 {% endblock %}
 
@@ -80,11 +80,28 @@
 {% block bugs %}
     <div class="doc-list">
         {{ bug(
-            "Additive module system",
+            "Interactive Runtime",
             """
-                Build features as self-contained subapps with their own routes, templates and static
-                files. Base Additives can be extended, and a <code>manifest.json</code> declares id,
-                version and requirements for Hub distribution.
+                The built-in interactive runtime <code>wf run [app] --interactive</code> does not
+                work properly on NT based systems due to process management issues.
+            """
+        ) }}
+
+        {{ bug(
+            "Version representation",
+            """
+                Currently version resolving and representation is not able to handle pre-release stages
+                and builds. Version requirement checks of Additive manifests (especially framework version
+                declarations) may fail on startup.
+            """
+        ) }}
+
+        {{ bug(
+            "Static serving",
+            """
+                Fluid itself requires a static folder to work, since it has no auto detection to skip
+                the StaticFiles setup on initialization. In this version only Additives do have optioned
+                setup of StaticFiles based on the existence of the static folder.
             """
         ) }}
     </div>

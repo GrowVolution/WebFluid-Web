@@ -413,9 +413,9 @@
         background: color-mix(in srgb, var(--secondary-3) 45%, transparent);
     }
     .doc-pill-stage {
-        @apply text-tertiary-1;
-        background: color-mix(in srgb, var(--tertiary-4) 25%, transparent);
-        border-color: color-mix(in srgb, var(--tertiary-2) 40%, transparent);
+        @apply text-info-1;
+        background: color-mix(in srgb, var(--info-4) 25%, transparent);
+        border-color: color-mix(in srgb, var(--info-2) 40%, transparent);
     }
     .doc-pill-date { @apply text-slate-400 bg-white/5; }
     .doc-gh {
@@ -458,28 +458,29 @@
     .doc-item h4 { @apply font-display font-semibold; }
     .doc-item p { @apply mt-1 text-sm leading-relaxed text-slate-400; }
     .doc-item code { @apply px-1.5 py-0.5 rounded bg-white/10; }
-    .doc-callout {
-        @apply flex gap-3.5 px-5 py-4 rounded-2xl text-default-1;
+    .doc-callout { @apply flex gap-3.5 px-5 py-4 rounded-2xl; }
+    .doc-callout-default {
+        @apply text-default-1;
         background: color-mix(in srgb, var(--default-4) 15%, transparent);
         border: 1px solid color-mix(in srgb, var(--default-2) 30%, transparent);
     }
     .doc-callout-success {
-        @apply flex gap-3.5 px-5 py-4 rounded-2xl text-success-1;
+        @apply text-success-1;
         background: color-mix(in srgb, var(--success-4) 15%, transparent);
         border: 1px solid color-mix(in srgb, var(--success-2) 30%, transparent);
     }
     .doc-callout-warning {
-        @apply flex gap-3.5 px-5 py-4 rounded-2xl text-warning-1;
+        @apply text-warning-1;
         background: color-mix(in srgb, var(--warning-4) 15%, transparent);
         border: 1px solid color-mix(in srgb, var(--warning-2) 30%, transparent);
     }
     .doc-callout-danger {
-        @apply flex gap-3.5 px-5 py-4 rounded-2xl text-danger-1;
+        @apply text-danger-1;
         background: color-mix(in srgb, var(--danger-4) 15%, transparent);
         border: 1px solid color-mix(in srgb, var(--danger-2) 30%, transparent);
     }
     .doc-callout-info {
-        @apply flex gap-3.5 px-5 py-4 rounded-2xl text-info-1;
+        @apply text-info-1;
         background: color-mix(in srgb, var(--info-4) 15%, transparent);
         border: 1px solid color-mix(in srgb, var(--info-2) 30%, transparent);
     }
@@ -503,5 +504,58 @@
             inset: 4rem 0 0 0;
             background: rgba(0, 0, 0, .55);
         }
+    }
+
+
+    .doc-prose h2 {
+        @apply font-display font-bold text-2xl text-slate-100 mt-12 mb-4;
+        scroll-margin-top: 5rem;
+    }
+    .doc-prose h3 {
+        @apply font-display font-semibold text-lg text-slate-100 mt-8 mb-3;
+        scroll-margin-top: 5rem;
+    }
+    .doc-prose p:not(.doc-callout p) { @apply mt-4 leading-relaxed text-slate-300; }
+    .doc-prose a {
+        @apply text-tertiary-1 underline underline-offset-4 transition;
+        text-decoration-color: color-mix(in srgb, var(--tertiary-1) 30%, transparent);
+    }
+    .doc-prose a:hover { text-decoration-color: var(--tertiary-1); }
+    .doc-prose ul,
+    .doc-prose ol { @apply mt-4 pl-6 flex flex-col gap-1.5 text-slate-300 leading-relaxed; }
+    .doc-prose ul { list-style: disc; }
+    .doc-prose ol { list-style: decimal; }
+    .doc-prose li::marker { color: color-mix(in srgb, var(--tertiary-1) 70%, transparent); }
+    .doc-prose code {
+        @apply font-mono px-1.5 py-0.5 rounded text-tertiary-1 bg-white/10;
+        font-size: .85em;
+    }
+    .doc-prose strong:not(.doc-callout strong) { @apply text-slate-100 font-semibold; }
+
+
+    .doc-code {
+        @apply mt-5 rounded-2xl overflow-hidden border border-white/10;
+        background: #08111f;
+        box-shadow: 0 14px 40px rgba(0, 0, 0, .35);
+    }
+    .doc-code-bar {
+        @apply flex items-center justify-between gap-3 px-4 py-2.5 border-b border-white/[.06];
+        background: rgba(255, 255, 255, .03);
+    }
+    .doc-code-bar-label {
+        @apply font-mono text-xs tracking-wider uppercase;
+        color: rgba(255, 255, 255, .55);
+    }
+    .doc-code-bar-lang {
+        @apply font-mono text-xs font-semibold tracking-wide text-tertiary-1 px-2 py-0.5 rounded;
+        background: color-mix(in srgb, var(--tertiary-3) 25%, transparent);
+        border: 1px solid color-mix(in srgb, var(--tertiary-1) 30%, transparent);
+    }
+    .doc-code pre { @apply m-0 px-5 py-5 overflow-x-auto; }
+    .doc-code code {
+        @apply font-mono text-sm leading-relaxed;
+        background: transparent !important;
+        padding: 0;
+        color: inherit;
     }
 }

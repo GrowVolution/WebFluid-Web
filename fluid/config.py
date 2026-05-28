@@ -1,6 +1,7 @@
 from webfluid.core.config import register_config
 
-from fluid._my_config import MyConfig
+try: from fluid._my_config import MyConfig
+except ImportError: MyConfig = object
 
 
 @register_config(10)
@@ -20,9 +21,5 @@ class Config(MyConfig):
             "stage": "alpha",
             "date": "May 22, 2026",
         },
-        "1.0.0a2": {
-            "stage": "alpha",
-            "date": "June 13, 2026",
-        }
     }
-    LATEST_VERSION = "1.0.0a2"
+    LATEST_VERSION = "1.0.0a1"

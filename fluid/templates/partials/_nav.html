@@ -1,5 +1,3 @@
-{% set current = current | default('') %}
-
 <aside class="docs-sidebar">
     <div class="docs-sidebar-inner">
         <details class="docs-version-select">
@@ -27,29 +25,29 @@
         </details>
 
         <nav class="docs-nav">
-            <a href="#" class="docs-nav-link {{ 'is-active' if current == 'overview' }}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
-                Overview
-            </a>
-
-            <a href="#" class="docs-nav-link {{ 'is-active' if current == 'getting-started' }}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9z"/></svg>
-                Getting Started
-            </a>
-
-            <details class="docs-nav-group" {{ 'open' if current in ['additives-intro', 'additives-manifest'] }}>
-                <summary class="docs-nav-summary">
-                    <span class="docs-nav-summary-label">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-                        Additives
-                    </span>
-                    <svg class="docs-nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-                </summary>
-                <div class="docs-nav-children">
-                    <a href="#" class="docs-nav-child {{ 'is-active' if current == 'additives-intro' }}">Introduction</a>
-                    <a href="#" class="docs-nav-child {{ 'is-active' if current == 'additives-manifest' }}">The Manifest</a>
-                </div>
-            </details>
+            {{ nav }}
         </nav>
     </div>
 </aside>
+
+{% macro link(href, icon, label) %}
+    <a href="{{ href }}" class="docs-nav-link {{ 'is-active' if path == href else '' }}">
+        {{ icon }} {{ label }}
+    </a>
+{% endmacro %}
+
+{% macro group(icon, label, elements) %}
+    <details class="docs-nav-group" {{ 'open' if path in elements }}>
+        <summary class="docs-nav-summary">
+            <span class="docs-nav-summary-label">
+                {{ icon }} {{ label }}
+            </span>
+            <svg class="docs-nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+        </summary>
+        <div class="docs-nav-children">
+            {% for href, label in elements.items() %}
+                <a href="{{ href }}" class="docs-nav-child {{ 'is-active' if path == href else '' }}">{{ label }}</a>
+            {% endfor %}
+        </div>
+    </details>
+{% endmacro %}

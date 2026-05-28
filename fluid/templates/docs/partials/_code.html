@@ -1,0 +1,9 @@
+{% macro code(label, lang, content) %}
+    <div class="doc-code">
+        <div class="doc-code-bar">
+            <span class="doc-code-bar-label">{{ label }}</span>
+            <span class="doc-code-bar-lang">{{ lang }}</span>
+        </div>
+        <pre><code class="language-{{ lang }}">{{ content }}</code></pre>
+    </div>
+{% endmacro %}
