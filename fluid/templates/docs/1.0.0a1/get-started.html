@@ -26,8 +26,8 @@
         </p>
 
         {{ code(
-                "terminal", "bash",
-                """pip install webfluid==1.0.0a1
+            "terminal", "bash",
+            """pip install webfluid==1.0.0a1
 
 mkdir -p myapp/fluid/templates
 cd myapp
@@ -51,8 +51,8 @@ mkdir app_configs"""
         </p>
 
         {{ code(
-                "main.py", "python",
-                '''from webfluid import Fluid
+            "main.py", "python",
+            '''from webfluid import Fluid
 from fastapi.responses import HTMLResponse
 
 fluid = Fluid(__name__)
@@ -93,8 +93,8 @@ if __name__ == "__main__":
         <p>
             Now we have created a minimalistic app, which should render an <code>index.html</code>
             template. Like Flask, Fluid is also using the Jinja2 templating engine. It has its
-            own jinja_env, and the major difference is the async environment as well as the
-            rendering utility that sits inside the class.
+            own <code>fluid.jinja_env</code>, and the major difference is the async environment
+            as well as the rendering utility that sits inside the class.
             <br><br>
             Another slight difference is the location of the app templates. Fluid is designed to
             be abstracted and modular. So they are (as you may have already guessed looking at
@@ -102,8 +102,8 @@ if __name__ == "__main__":
         </p>
 
         {{ code(
-                "fluid/templates/index.html", "html",
-                """&lt;!DOCTYPE html&gt;
+            "fluid/templates/index.html", "html",
+            """&lt;!DOCTYPE html&gt;
 &lt;html lang=&quot;en&quot;&gt;
 &lt;head&gt;
     &lt;meta charset=&quot;UTF-8&quot;&gt;
@@ -144,8 +144,8 @@ if __name__ == "__main__":
         </p>
 
         {{ code(
-                "terminal", "bash",
-                """cat <<'EOF' > app_configs/app.ini
+            "terminal", "bash",
+            """cat <<'EOF' > app_configs/app.ini
 [general]
 SECRET_KEY = supersecret
 EOF"""
@@ -183,13 +183,21 @@ Starting application...
         <p>
             With the basics in place, we can now dive below the surface of your fluid:
         </p>
-        <ol>
+        <ol class="mb-5">
             <li>Read the <a href="/v/{{ version }}/config/app-config">configuration guide</a> to learn how to configure your apps.</li>
             <li>Explore our <a href="/v/{{ version }}/ext/base">extension system</a> and the built-in batteries.</li>
             <li>Discover the integrated <a href="/v/{{ version }}/surface/tooling">frontend tooling</a>
                 to release the full potential of your fluid.</li>
             <li>Build portable modules using our <a href="/v/{{ version }}/additives/intro">Additive battery</a>.</li>
             <li>Skim the <a href="/v/{{ version }}/cli/wf">CLI reference</a> for everything the <code>wf</code> command can do.</li>
+            <li>Get to know the <a href="/v/{{ version }}/utils/lifecycle">framework utility</a> for more advanced stuff.</li>
         </ol>
+
+        {{ info("""
+            This documentation is written in order. So each chapter will build up on the previous ones.
+            If you want to get the best understanding of how to work with WebFluid we highly recommend
+            you to keep the project we created in this chapter and continue diving through the layers of
+            this documentation in order.
+        """) }}
     </article>
 {% endblock %}

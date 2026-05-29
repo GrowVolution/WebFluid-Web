@@ -104,6 +104,23 @@
                 setup of StaticFiles based on the existence of the static folder.
             """
         ) }}
+
+        {{ bug(
+            "Translation cache",
+            """
+                The db-backed (runtime) translation cache is not optimized for big data. Translation keys strings
+                cannot be opted out. Furthermore the structure of translation files may be a bit cursed.
+            """
+        ) }}
+
+        {{ bug(
+            "Event-System",
+            """
+                Our Events extensions' broadcasting system is not optimized for queues that are running behind.
+                Also the provided EventManager for your frontend does not provide support for requesting
+                a query result.
+            """
+        ) }}
     </div>
 {% endblock %}
 

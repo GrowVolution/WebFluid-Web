@@ -30,8 +30,8 @@
         </p>
 
         {{ code(
-                "main.py", "python",
-                '''from webfluid import Fluid
+            "main.py", "python",
+            '''from webfluid import Fluid
 from webfluid.core.config import register_config
 from fastapi.responses import HTMLResponse
 
@@ -93,7 +93,7 @@ if __name__ == "__main__":
             <li>
                 <code>APP_CONFIG</code> — A dictionary that stores the FastAPI
                 initialization parameters as keyword arguments. Default (if not defined in
-                a config class) is <code>{ "title": "WebFluid Application", "version": "1.0.0" }</code>.
+                a config class) is <strong>{ "title": "WebFluid Application", "version": "1.0.0" }</strong>.
             </li>
             <li>
                 <code>APP_FRONTEND</code> — The Frontend configuration dictionary of your
@@ -101,9 +101,8 @@ if __name__ == "__main__":
             </li>
             <li>
                 <code>SESSION_COOKIE_*</code> — There are three SessionMiddleware configuration
-                values: NAME, SAMESITE and SECURE. NAME and SAMESITE are string values, SECURE
-                is a boolean. Default values are <code>"session"</code>, <code>"lax"</code> and
-                <code>False</code>.
+                values: NAME, SAMESITE and SECURE. Default values are <strong>"session"</strong>,
+                <strong>"lax"</strong> and  <strong>False</strong>.
             </li>
             <li>
                 <code>PROXY_FIX</code> — Is set to true this your app will be cast into a
@@ -113,13 +112,17 @@ if __name__ == "__main__":
             <li>
                 <code>RATELIMIT_*</code> — Three values for setting up ratelimiting:
                 ENABLED, STORAGE_URI and DEFAULT. WebFluid uses slowapi for ratelimiting.
-                Default values are <code>True</code>, <code>f"{os.getenv('REDIS_URI', 'redis://localhost:6379')}/1"</code>
-                and <code>["500/day", "100/hour"]</code>.
+                Default values are <strong>True</strong>,
+                <strong>f"{os.getenv('REDIS_URI', 'redis://localhost:6379')}/1"</strong>
+                and <strong>["500/day", "100/hour"]</strong>.
             </li>
             <li>
                 Further configuration values are used by the framework extensions to load their settings.
-                More about them and their defaults in the "Extensions" chapter.
+                More about them and their defaults in the next chapter.
             </li>
         </ul>
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/ext/base">Fluid Extensions</a>.</p>
     </article>
 {% endblock %}

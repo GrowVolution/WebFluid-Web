@@ -1,4 +1,5 @@
 {% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
 {% from "docs/partials/_callout.html" import info %}
 
 {% block title %}App Configs — WebFluid Docs{% endblock %}
@@ -15,10 +16,8 @@
 
         <h2>The core concept</h2>
         <p>
-            App configs are built to replace <code>.env</code> files and provide an easy
-            way to spin up multiple apps inside one project. You create an <code>app_configs/[app].ini</code>
-            file and then the CLI uses its name to perform app-specific commands like running it
-            or migrating its database.
+            App configs are the CLI's entry point into your project. They replace <code>.env</code> files and
+            tell the framework which app to run.
             <br><br>
             Primarily it is used to store secrets, potentially risky information (like database uris) and switches.
             Switches are another core concept of WebFluid. The framework uses them to enroll features and extensions
@@ -28,41 +27,49 @@
         <h2>Sections</h2>
         <p>
             App configs are parsed using Pythons <a href="https://docs.python.org/3/library/configparser.html">configparser</a>.
-            Primarily, we are using sections to logically separate parts of your apps' configuration. The most important
-            sections are:
+            Primarily, we are using sections to logically separate parts of your apps' configuration. A fully qualified
+            example would look like this:
         </p>
 
-        <h3>DEFAULT / general</h3>
-        <p class="mb-5">
-            The <code>[DEFAULT]</code> or <code>[general]</code> section is used to store some of the basic information
-            like your apps SECRET_KEY and whatever you think is part of it too.
-        </p>
+        {{ code(
+            "app_configs/[app].ini", "ini",
+            """[general]
+SECRET_KEY = supersecret
+
+[data]
+DATABASE_URI = sqlite:///test.db
+REDIS_URI = redis://localhost:6379
+
+[extensions]
+EXT_SCHEDULING = 0
+EXT_SQLALCHEMY = 1
+EXT_BABEL = 1
+EXT_EVENTS = 1
+EXT_CACHE = 0
+EXT_MAIL = 1
+EXT_JWT = 0
+
+[features]
+WF_THEMES = 1
+WF_TAILWIND = 1
+WF_PROCESSING = 1
+WF_ADDITIVES = 1
+
+[mail]
+MAIL_USERNAME = noreply@example.org
+MAIL_PASSWORD = supersecret"""
+        ) }}
+
+        <span class="my-5">&nbsp;</span>
 
         {{ info('''
             We used "general" for our logical defaults, but
             since it is just logical separation, you are not forced to stick with our defaults. This, of course, applies to
-            all the sections explained in this article.
+            all the sections shown above.
         ''') }}
 
-        <h3>extensions</h3>
-        <p>
-            Extension switches are written into the <code>[extensions]</code> section.
-            All of our extension switches are prefixed with <code>EXT_</code>. They are used
-            to enable the frameworks' default extensions.
-        </p>
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/config/config-class">Config Classes</a>.</p>
 
-        <h3>features</h3>
-        <p>
-            Framework feature flags are separated into the <code>[features]</code> section.
-            They are switches that toggle framework functionality like request logging, exception
-            handling and default endpoints. Feature flags are prefixed with <code>WF_</code>.
-        </p>
-
-        <h3>data / mail</h3>
-        <p>
-            We use sections like <code>[data]</code> and <code>[mail]</code> to store extension-specific
-            configuration values there. This can be database uris, mail server authentication details and
-            other potentially insecure information.
-        </p>
     </article>
 {% endblock %}
