@@ -21,7 +21,7 @@
             We will show you a quick example of using your own <code>db</code> instance in the end of
             this chapter.
             <br><br>
-            For let's just get started by creating your first simple model:
+            For now let's just get started by creating your first simple model:
         </p>
 
         {{ code(
@@ -712,13 +712,6 @@ async def add_model(request: Request):
 if __name__ == "__main__":
     # Now you have to expand the fluid yourself:
     db.expand_fluid(fluid)
-
-    # But you can stick with the instance from webfluid.core.ext
-    # as well and just expand the fluid with that instance manually,
-    # while passing the \'base\' parameter there instead:
-
-    # from webfluid.core.ext import db
-    # db.expand_fluid(fluid, base=MyBase)
 
     bind = db.get_bind_for_model(MyModel)
     db.Model.metadata.create_all(bind.sync_engine)

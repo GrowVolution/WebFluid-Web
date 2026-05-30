@@ -105,13 +105,14 @@ if __name__ == "__main__":
                 <strong>"lax"</strong> and  <strong>False</strong>.
             </li>
             <li>
-                <code>PROXY_FIX</code> — Is set to true this your app will be cast into a
+                <code>PROXY_FIX</code> — If set to true your app will be cast into a
                 ProxyHeadersMiddleware and the <code>fluid.asgi_app</code> property will
                 return a ProxyHeadersMiddleware instance.
             </li>
             <li>
                 <code>RATELIMIT_*</code> — Three values for setting up ratelimiting:
-                ENABLED, STORAGE_URI and DEFAULT. WebFluid uses slowapi for ratelimiting.
+                ENABLED, STORAGE_URI and DEFAULT. WebFluid uses
+                <a href="https://slowapi.readthedocs.io/en/latest/">slowapi</a> for ratelimiting.
                 Default values are <strong>True</strong>,
                 <strong>f"{os.getenv('REDIS_URI', 'redis://localhost:6379')}/1"</strong>
                 and <strong>["500/day", "100/hour"]</strong>.
