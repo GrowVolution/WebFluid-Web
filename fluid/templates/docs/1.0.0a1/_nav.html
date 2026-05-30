@@ -27,9 +27,10 @@
     "Extensions",
     {
         base ~ "ext/base": "Introduction",
+        base ~ "ext/scheduling": "Scheduling",
         base ~ "ext/sqlalchemy": "SQLAlchemy",
         base ~ "ext/migrate": "Migrate",
-        base ~ "ext/mailman": "Mailman",
+        base ~ "ext/mailman": "Mail",
         base ~ "ext/babel": "Babel",
         base ~ "ext/events": "Events",
         base ~ "ext/cache": "Cache",
@@ -58,20 +59,21 @@
 ) }}
 
 {{ group(
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>',
+    "Framework utility",
+    {
+        base ~ "utils/lifecycle": "Lifecycle",
+        base ~ "utils/runtime": "Runtime",
+        base ~ "utils/logging": "Logging"
+    }
+) }}
+
+{{ group(
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>',
     "CLI",
     {
         base ~ "cli/wf": "Introduction",
         base ~ "cli/create": "Create",
         base ~ "cli/run": "Run"
-    }
-) }}
-
-{{ group(
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>',
-    "Framework utility",
-    {
-        base ~ "utils/lifecycle": "Lifecycle",
-        base ~ "utils/runtime": "Runtime"
     }
 ) }}

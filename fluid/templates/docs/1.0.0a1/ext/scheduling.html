@@ -1,0 +1,88 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+
+{% block title %}Scheduling — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Extensions</span>
+        <h1 class="doc-h1">Scheduling</h1>
+        <p class="doc-lead">
+            Okay, this it might be a bit confusing: The first extension we are talking about
+            is no real FluidExtension. It's just an AsyncIOScheduler from
+            <a href="https://apscheduler.readthedocs.io/en/3.x/userguide.html">APScheduler</a>
+            that gets started if you have <code>EXT_SCHEDULING = 1</code> in your app config
+            and your app is run.
+        </p>
+
+        <h2>A short example</h2>
+        <p>
+            However, to provide you a short example on how to use it and to slightly introduce you
+            in enabling and working with extensions, let's wire up a short example:
+        </p>
+
+        {{ code(
+            "fluid/jobs.py", "python",
+            'def heart(): print("Beat!")'
+        ) }}
+
+        {{ code(
+            "main.py", "python",
+            '''from webfluid import Fluid
+from webfluid.core.config import register_config
+from webfluid.core.ext import scheduler
+from fastapi.responses import HTMLResponse
+from apscheduler.triggers.interval import IntervalTrigger
+
+from extension.main import MyExtension
+from fluid.jobs import heart
+
+
+@register_config(10)
+class MyConfig:
+    SESSION_COOKIE_SECURE = True
+
+    MYEXT_BAR = "crazy"
+
+fluid = Fluid(__name__)
+
+my_ext = MyExtension(fluid)
+scheduler.add_job(heart, IntervalTrigger(seconds=5))
+
+
+@fluid.get("/", response_class=HTMLResponse)
+async def home():
+    return await fluid.render(
+        "index.html",
+        title="Hello World!",
+        name="my friend"
+    )
+
+
+@fluid.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
+if __name__ == "__main__":
+    fluid.mix()'''
+        ) }}
+
+        {{ code(
+            "app_configs/app.ini", "ini",
+            '''[general]
+SECRET_KEY = supersecret
+
+[extensions]
+EXT_SCHEDULING = 1'''
+        ) }}
+
+        <p>
+            Now you can run your app using <code>wf run app</code> like we've shown,
+            and then you'll see the heart beat in your terminal.
+        </p>
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/ext/sqlalchemy">SQLAlchemy</a>.</p>
+    </article>
+{% endblock %}

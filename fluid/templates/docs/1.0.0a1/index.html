@@ -106,6 +106,15 @@
         ) }}
 
         {{ bug(
+            "Dynamic binds",
+            """
+                The Migrate extension is not able to handle complex features like dynamically defined
+                database binds using the <code>Model.set_bind</code> utility. Especially not if the binds
+                are set during the lifecycle of your application.
+            """
+        ) }}
+
+        {{ bug(
             "Translation cache",
             """
                 The db-backed (runtime) translation cache is not optimized for big data. Translation keys strings
