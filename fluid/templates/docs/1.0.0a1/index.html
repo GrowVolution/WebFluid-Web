@@ -106,11 +106,23 @@
         ) }}
 
         {{ bug(
-            "Dynamic binds",
+            "Dynamic binds & Multi-DB",
             """
                 The Migrate extension is not able to handle complex features like dynamically defined
                 database binds using the <code>Model.set_bind</code> utility. Especially not if the binds
                 are set during the lifecycle of your application.
+            """
+        ) }}
+
+        {{ bug(
+            "Alembic templates",
+            """
+                The Alembic templates provided by our Migrate extension are assuming that the <code>additive</code>
+                directory exists. So there must be an additive directory inside your project directory, if you are
+                using Migrate. Even if you are not working with Additives and do not plan to do so.
+                <br><br>
+                Also the Multi-DB templates of Migrate are not debugged and so so migrating multi db setups is
+                currently not possible without refactoring the <code>env.py</code> files yourself.
             """
         ) }}
 
