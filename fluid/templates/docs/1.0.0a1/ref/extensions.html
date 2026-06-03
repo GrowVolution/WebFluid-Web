@@ -1,0 +1,80 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+
+{% block title %}Reference: Extensions — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Reference</span>
+        <h1 class="doc-h1">Extensions</h1>
+        <p class="doc-lead">
+            <code>webfluid.extensions</code> &mdash; the base extension and the battery set. All of them
+            follow the same shape: a class with an <code>expand_fluid</code> method, instantiated once and
+            reachable through <code>webfluid.core.ext</code>.
+        </p>
+
+        <h2>FluidExtension</h2>
+        <p><code>from webfluid.extensions import FluidExtension</code> &mdash; the base class for all extensions.</p>
+        <ul>
+            <li><code>expand_fluid(fluid, *args)</code> &mdash; override to hook into the app; called automatically when an extension is constructed with a fluid.</li>
+            <li><code>cli_entry(app, name)</code> &mdash; mounts the extension's <code>_cli</code> Typer app under <code>wf</code>.</li>
+        </ul>
+
+        <h2>SQLAlchemy</h2>
+        <ul>
+            <li><code>Model</code> &mdash; the declarative base; resolves <code>__tablename__</code> from the snake-cased class name, supports <code>__bind_key__</code> and <code>Model.set_bind(key)</code>.</li>
+            <li><code>executor(bind_key=None, model=None)</code> / <code>async_executor(...)</code> &mdash; context managers yielding an executor with <code>exec</code>, <code>insert</code>, <code>delete</code>, <code>flush</code>; commit/rollback handled for you.</li>
+            <li><code>exec(statement, scalars=True)</code> &mdash; returns a ScalarResult by default; pass <code>scalars=False</code> for the raw Result.</li>
+            <li><code>get_bind_for_model(model)</code> &mdash; resolves the <code>_Bind</code> (with <code>sync_engine</code> / <code>async_engine</code>) for a model.</li>
+            <li>Config: <code>SQLALCHEMY_DATABASE_URI</code>, <code>SQLALCHEMY_BINDS</code>. Drivers are derived; don't put them in the uri.</li>
+        </ul>
+
+        <h2>Babel</h2>
+        <ul>
+            <li><code>gettext</code>, <code>ngettext</code>, <code>pgettext</code>, <code>npgettext</code> and their <code>lazy_*</code> variants.</li>
+            <li><code>locale_selector(fn)</code> / <code>timezone_selector(fn)</code> &mdash; register custom resolvers.</li>
+            <li><code>force(locale, timezone)</code> / <code>aforce(...)</code> &mdash; context managers to pin locale/timezone.</li>
+            <li><code>register_domain(name, package=None)</code> / <code>update_translations(domain, translations)</code> &mdash; runtime, db-backed catalogs.</li>
+            <li><code>load_locale(locale)</code>, <code>extract()</code> (CLI), and the formatting filters from <code>webfluid.extensions.utils.babel</code> (<code>format_date</code>, <code>format_currency</code>, ...).</li>
+            <li>Companions: <code>Domain</code>, <code>I18nMessage</code> (the translation model), <code>LazyString</code>.</li>
+        </ul>
+
+        <h2>EventManager</h2>
+        <ul>
+            <li><code>create_signal(name, singleton=False, internal=False)</code> &mdash; declare an event channel.</li>
+            <li><code>event(name, ...)</code> / <code>query(name, ...)</code> &mdash; decorators registering handlers; <code>internal=False</code> exposes them to the browser.</li>
+            <li><code>trigger(event, data)</code> &mdash; publish; <code>request(query, data)</code> &mdash; ask and await a result; <code>listen(event)</code> &mdash; async stream.</li>
+            <li>Client: <code>window.wf.ext.events.EventManager</code>.</li>
+        </ul>
+
+        <h2>Mail</h2>
+        <ul>
+            <li><code>send(to, subject, body, ...)</code> &mdash; <code>body</code> is a MIME-subtype map; threads delivery by default (<code>fake_async</code>).</li>
+            <li><code>send_async(...)</code> &mdash; the awaited variant. Both accept <code>attachments</code>, <code>cc</code>, <code>bcc</code>, <code>from_email</code>.</li>
+            <li><code>make_message(...)</code>, <code>client()</code> / <code>async_client()</code> &mdash; raw message building and bare SMTP connections.</li>
+        </ul>
+
+        <h2>Cache</h2>
+        <ul>
+            <li><code>set</code> / <code>get</code> / <code>delete</code> / <code>clear</code> and the async <code>aset</code> / <code>aget</code> / <code>adelete</code> / <code>aclear</code>.</li>
+            <li>Backends selected by <code>CACHE_TYPE</code>: <strong>legacy</strong> (in-memory, needs the scheduler) or <strong>redis</strong>.</li>
+        </ul>
+
+        <h2>JWTManager</h2>
+        <ul>
+            <li><code>encode(payload, audience="default")</code> / <code>decode(token, ...)</code> and the async <code>aencode</code> / <code>adecode</code>.</li>
+            <li>Requires <code>EXT_SCHEDULING</code> and <code>EXT_CACHE</code>; rotates its signing secret on a schedule and keeps recent ones in the cache.</li>
+        </ul>
+
+        <h2>Migrate</h2>
+        <p>A CLI-only extension (<code>wf migrate ...</code>) wrapping Alembic:</p>
+        <ul>
+            <li><code>init &lt;app&gt;</code> &mdash; enroll the matching single- or multi-db template.</li>
+            <li><code>revision &lt;app&gt; [-a] [-m]</code> &mdash; create a revision (optionally autogenerated).</li>
+            <li><code>upgrade &lt;app&gt;</code> / <code>downgrade &lt;app&gt; [-r]</code> &mdash; apply / revert migrations.</li>
+        </ul>
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/ref/surface">Surface</a>.</p>
+    </article>
+{% endblock %}

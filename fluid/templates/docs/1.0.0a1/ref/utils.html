@@ -1,0 +1,68 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+
+{% block title %}Reference: Utils — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Reference</span>
+        <h1 class="doc-h1">Utils</h1>
+        <p class="doc-lead">
+            <code>webfluid.utils</code> &mdash; the grab bag the framework leans on internally and exposes
+            for your own use: small helpers, the log factory and the exception hierarchy.
+        </p>
+
+        <h2>webfluid.utils (framework helpers)</h2>
+        <ul>
+            <li><code>enabled(key)</code> &mdash; read a truthy environment switch.</li>
+            <li><code>safe_string(text)</code> / <code>camel_to_snake(text)</code> / <code>random_code(length)</code> &mdash; string helpers.</li>
+            <li><code>async_result(value)</code> &mdash; await it if awaitable, otherwise return as-is.</li>
+            <li><code>safe_execute(fn, reraise, *args)</code> &mdash; call sync/async, optionally swallowing and logging exceptions.</li>
+            <li><code>run_in_executor(fn, *args)</code> &mdash; run a blocking call off the event loop.</li>
+            <li><code>required_arg_count(fn)</code> / <code>is_async_function(fn)</code> &mdash; introspection used by the hook validators.</li>
+            <li><code>get_root_path(import_name)</code>, <code>try_import(name)</code> &mdash; import-location helpers.</li>
+            <li><code>check_required_version(requirement, ...)</code>, <code>check_priority(priority)</code>, <code>build_sorted_tuple(data)</code> &mdash; version and config plumbing.</li>
+            <li><code>add_proxy(target, base_url, ...)</code>, <code>get_proxy(...)</code>, <code>get_websocket_proxy(...)</code>, <code>close_proxy_client()</code> &mdash; the reverse-proxy utilities behind HMR.</li>
+        </ul>
+
+        <h2>webfluid.utils.logging</h2>
+        <p>The shared log factory:</p>
+
+        {{ code(
+            "example", "python",
+            '''from webfluid.utils.logging import factory as log
+
+log.log("info line")
+log.debug("...")
+log.warning("...")
+log.error("...")
+log.exception(exc, "optional message")'''
+        ) }}
+
+        <ul>
+            <li><code>factory</code> &mdash; the singleton <code>LogFactory</code>. Logs only while a run is in execution.</li>
+            <li><code>additive_context(fn)</code> &mdash; routes a callable's logs through the Additive logger.</li>
+            <li><code>start_session()</code> &mdash; sets up handlers and log level (called by the runtime).</li>
+        </ul>
+
+        <h2>webfluid.utils.additive</h2>
+        <ul>
+            <li><code>id_check</code>, <code>version_check</code>, <code>type_check</code> &mdash; the manifest field validators.</li>
+            <li><code>require_extensions(*names)</code> &mdash; decorator that asserts the named extensions are enabled.</li>
+        </ul>
+
+        <h2>webfluid.exceptions</h2>
+        <ul>
+            <li><code>FrameworkException</code> &mdash; the root of all framework errors.</li>
+            <li><code>FrontendException</code> &rarr; <code>NodeError</code>, <code>TailwindError</code>.</li>
+            <li><code>AdditiveException</code> &rarr; <code>ManifestError</code>.</li>
+        </ul>
+
+        <h2>That's a wrap</h2>
+        <p>
+            You've gone from a single <code>main.py</code> to the full surface of WebFluid. Keep the
+            <a href="/v/{{ version }}/">overview</a> handy for the known issues this alpha ships with, pin
+            your version, and go build something liquid.
+        </p>
+    </article>
+{% endblock %}

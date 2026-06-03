@@ -1,0 +1,163 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import info, success %}
+
+{% block title %}Additives — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Additives</span>
+        <h1 class="doc-h1">Introduction</h1>
+        <p class="doc-lead">
+            Extensions taught the framework new tricks. Additives are the other half of WebFluid's
+            modularity: self-contained <strong>sub-apps</strong> with their own routes, templates,
+            static files and even their own frontend. They are the unit you build features in &mdash;
+            and the unit you ship, because a manifest makes them distributable.
+        </p>
+
+        <h2>What an Additive is</h2>
+        <p>
+            An Additive is a Python package that lives inside your project's <code>additives</code>
+            directory and exposes a single <code>additive</code> object. When your app starts, every
+            <em>enabled</em> Additive is mounted under its own url prefix, with its routes, templates
+            and static files wired in automatically. Think of it as a small WebFluid app nested inside
+            the main one.
+        </p>
+
+        <p>A minimal Additive has a clear shape:</p>
+
+        {{ code(
+            "structure", "text",
+            '''additives/
+└── pulse/
+    ├── __init__.py        # exposes `additive: Additive`
+    ├── manifest.json      # id, version, type, frontend, ...
+    ├── app/               # HTML routes
+    │   ├── __init__.py
+    │   └── index.py
+    └── templates/
+        └── index.html'''
+        ) }}
+
+        <h2>The manifest</h2>
+        <p>
+            Every Additive is described by a <code>manifest.json</code>. Four fields are required &mdash;
+            <code>id</code>, <code>version</code>, <code>type</code> and <code>frontend</code> &mdash;
+            the rest is optional metadata. Our first Additive is a plain default with no frontend:
+        </p>
+
+        {{ code(
+            "additives/pulse/manifest.json", "json",
+            '''{
+  "id": "pulse",
+  "version": "1.0.0",
+  "type": "default",
+  "frontend": { "type": "none" },
+  "name": "Pulse"
+}'''
+        ) }}
+
+        <h2>The additive object</h2>
+        <p>
+            The package's <code>__init__.py</code> creates the <code>Additive</code> and registers its
+            routes. Routes are attached inside a <code>before_enable</code> hook, because the framework
+            includes the Additive's routers into your app the moment it is enabled. Every Additive ships
+            three routers: <code>app</code> for HTML, <code>api</code> for JSON (mounted under
+            <code>/api</code>) and <code>ws</code> for WebSockets (under <code>/ws</code>):
+        </p>
+
+        {{ code(
+            "additives/pulse/__init__.py", "python",
+            '''from webfluid import Additive
+
+additive = Additive(__name__)
+
+
+@additive.before_enable
+def before_enable(_):
+    from .app import index
+    additive.app.get("/")(index)'''
+        ) }}
+
+        <p>
+            The handler itself looks just like a main-app route, except it renders through the
+            Additive. <code>additive.render</code> resolves templates inside the Additive's own
+            namespace, so a plain <code>"index.html"</code> finds
+            <code>additives/pulse/templates/index.html</code>:
+        </p>
+
+        {{ code(
+            "additives/pulse/app/index.py", "python",
+            '''async def handle_request():
+    from .. import additive
+    return await additive.render("index.html")'''
+        ) }}
+
+        {{ code(
+            "additives/pulse/app/__init__.py", "python",
+            '''from .index import handle_request as index
+
+__all__ = ["index"]'''
+        ) }}
+
+        <p>
+            And because Additives can render through the framework base just like your main app, the
+            template feels completely at home:
+        </p>
+
+        {{ code(
+            "additives/pulse/templates/index.html", "html",
+            """{% extends &quot;fluid_base.html&quot; %}
+
+{% block title %}{{ _('Pulse') }}{% endblock %}
+
+{% block content %}
+    &lt;h1&gt;{{ _('A fresh liquid is flowing.') }}&lt;/h1&gt;
+{% endblock %}"""
+        ) }}
+
+        <h2>Enabling an Additive</h2>
+        <p>
+            Additives are optioned twice: the <code>WF_ADDITIVES</code> feature has to be on, and each
+            Additive is then toggled by its <strong>id</strong> in the <code>[additives]</code> section
+            of your app config. Nothing is loaded unless it is explicitly switched on:
+        </p>
+
+        {{ code(
+            "app_configs/app.ini", "ini",
+            """[general]
+SECRET_KEY = supersecret
+
+[features]
+WF_PROCESSING = 1
+WF_ADDITIVES = 1
+
+[additives]
+pulse = 1"""
+        ) }}
+
+        <p>
+            Run the app and the Additive's id becomes its url prefix. Our <code>pulse</code> page now
+            lives at <code>/pulse</code>, its (future) API would sit at <code>/pulse/api/...</code> and
+            its sockets at <code>/pulse/ws/...</code>.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            Hand-rolling this folder is great for understanding the anatomy, but you will almost never
+            do it manually. wf create additive scaffolds exactly this structure (and a frontend, and a
+            requirements list) interactively. We'll get there in the CLI chapter.
+        """) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ success("""
+            That's a whole feature, isolated in its own package, mounted with one switch. Next we'll see
+            how Additives can stand on the shoulders of others through base Additives.
+        """) }}
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/additives/base">Base Additives</a>.</p>
+    </article>
+{% endblock %}

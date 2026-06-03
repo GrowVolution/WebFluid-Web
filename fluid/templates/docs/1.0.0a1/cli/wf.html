@@ -1,0 +1,77 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import info %}
+
+{% block title %}The wf CLI — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">CLI</span>
+        <h1 class="doc-h1">Introduction</h1>
+        <p class="doc-lead">
+            We've leaned on <code>wf</code> the whole way through &mdash; running apps, migrating
+            databases, extracting translations. This chapter steps back and looks at the CLI as a whole,
+            because it is the one tool you keep returning to, and the place where everything we built by
+            hand finally gets handed to you for free.
+        </p>
+
+        <h2>One command, many doors</h2>
+        <p>
+            The <code>wf</code> command is built on <a href="https://typer.tiangolo.com/">Typer</a> and
+            groups its functionality into a small set of sub-commands:
+        </p>
+
+        {{ code(
+            "terminal", "bash",
+            """$ wf --help
+
+ create     Scaffold projects, apps and additives.
+ run        Run an app from its config.
+ node       Forward a command to the bundled Node runtime.
+ tailwind   Forward a command to the Tailwind CLI.
+
+ migrate    (extension) Manage Alembic migrations.
+ babel      (extension) Extract translation catalogs."""
+        ) }}
+
+        <p>
+            The first four are built in. The last two are interesting: <code>migrate</code> and
+            <code>babel</code> aren't part of the core CLI at all &mdash; they are extension CLIs that
+            attach themselves to <code>wf</code>.
+        </p>
+
+        <h2>How extensions extend the CLI</h2>
+        <p>
+            Remember the very first thing we did in the Extensions chapter? We registered an extension
+            through the <code>webfluid.extensions</code> entry-point. That is exactly how
+            <code>migrate</code> and <code>babel</code> show up here: on startup the CLI walks every
+            installed entry-point in that group and mounts each extension's Typer app as a sub-command
+            named after it. Your own <code>wf myext hello</code> from back then worked for the same
+            reason.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            So the CLI is open in both directions: the built-in commands cover the framework, and any
+            extension you (or someone else) installs can graft its own commands on without you touching a
+            thing. wf is as modular as the runtime it drives.
+        """) }}
+
+        <h2>The map ahead</h2>
+        <p>The next two chapters cover the two commands you'll reach for daily:</p>
+        <ul>
+            <li>
+                <a href="/v/{{ version }}/cli/create">Create</a> &mdash; scaffolding projects, apps and
+                Additives. This is where the whole documentation comes full circle.
+            </li>
+            <li>
+                <a href="/v/{{ version }}/cli/run">Run</a> &mdash; running an app from its config, in
+                plain, debug or interactive mode.
+            </li>
+        </ul>
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/cli/create">Create</a>.</p>
+    </article>
+{% endblock %}

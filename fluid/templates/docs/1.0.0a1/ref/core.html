@@ -1,0 +1,77 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+
+{% block title %}Reference: Core — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Reference</span>
+        <h1 class="doc-h1">Core</h1>
+        <p class="doc-lead">
+            The runtime heart: the application class, configuration, the request context, the shared
+            extension registry and the constants the framework reads its switches from.
+        </p>
+
+        <h2>Fluid</h2>
+        <p><code>from webfluid import Fluid</code> &mdash; the application, a subclass of FastAPI.</p>
+        <ul>
+            <li><code>Fluid(import_name)</code> &mdash; constructs the app; parses config, sets up static, jinja, middleware and the optioned batteries.</li>
+            <li><code>render(template, **ctx)</code> &mdash; async render through the context processors and the Jinja environment.</li>
+            <li><code>mix()</code> / <code>start()</code> &mdash; run the app (blocking / the underlying coroutine).</li>
+            <li><code>startup_hook(fn)</code> / <code>shutdown_hook(fn)</code> &mdash; register lifecycle callbacks (no required args).</li>
+            <li><code>before_request(fn)</code> / <code>after_request(fn)</code> / <code>context_processor(fn)</code> &mdash; request-level hooks.</li>
+            <li><code>add_theme(name, link)</code> / <code>get_theme()</code> / <code>set_theme(request, name)</code> &mdash; theme management (needs <code>WF_THEMES</code>).</li>
+            <li><code>limit</code> &mdash; the slowapi limiter decorator (or a no-op when rate limiting is off).</li>
+            <li><code>asgi_app</code> &mdash; the app, wrapped in proxy-headers middleware when <code>PROXY_FIX</code> is set.</li>
+            <li><code>config</code>, <code>jinja_env</code>, <code>jinja_context</code>, <code>sources</code>, <code>name</code>, <code>app_root</code>, <code>additive_root</code> &mdash; runtime attributes.</li>
+        </ul>
+
+        <h2>webfluid.core.config</h2>
+        <ul>
+            <li><code>register_config(priority=1)</code> &mdash; class decorator registering a config; priority 1&ndash;10, higher overrides lower.</li>
+            <li><code>Config</code> &mdash; the resolved config dict; <code>from_object</code> pulls in upper-cased attributes.</li>
+            <li><code>DefaultConfig</code> &mdash; the framework defaults every config inherits from.</li>
+            <li><code>init_configs(fluid)</code> / <code>build_config()</code> &mdash; auto-import and merge config classes (used internally).</li>
+        </ul>
+
+        <h2>webfluid.core.context</h2>
+        <ul>
+            <li><code>FluidContext</code> &mdash; the per-request context; <code>FluidContext.current()</code> returns it, exposing <code>.fluid</code>, <code>.request</code> and arbitrary stored data.</li>
+            <li><code>BaseContext</code> &mdash; the contextvar-backed base used by the executor, babel domain and log contexts.</li>
+        </ul>
+
+        <h2>webfluid.core.ext</h2>
+        <p>The shared, ready-to-use battery instances. Import the one you need:</p>
+
+        {{ code(
+            "example", "python",
+            '''from webfluid.core.ext import (
+    scheduler,  # APScheduler AsyncIOScheduler
+    db,         # SQLAlchemy
+    babel,      # Babel
+    events,     # EventManager
+    cache,      # Cache
+    mail,       # Mail
+    jwt         # JWTManager
+)'''
+        ) }}
+
+        <h2>webfluid.core.constants</h2>
+        <ul>
+            <li><code>FRAMEWORK_ROOT</code>, <code>FRAMEWORK_ID</code> &mdash; the package root and id (<code>"fluid"</code>).</li>
+            <li><code>APP_STATIC</code>, <code>WF_STATIC</code> &mdash; the static mount prefixes.</li>
+            <li><code>DEBUG</code>, <code>EXECUTION</code> &mdash; whether debug mode / a live run is active.</li>
+            <li><code>THEMES</code>, <code>TAILWIND</code>, <code>PROCESSING</code>, <code>ADDITIVES</code> &mdash; resolved feature switches.</li>
+            <li><code>EXT_SCHEDULING</code>, <code>EXT_SQLALCHEMY</code>, <code>EXT_BABEL</code>, <code>EXT_EVENTS</code>, <code>EXT_CACHE</code>, <code>EXT_MAIL</code>, <code>EXT_JWT</code> &mdash; resolved extension switches.</li>
+        </ul>
+
+        <h2>webfluid.version</h2>
+        <ul>
+            <li><code>version()</code> &mdash; returns the running <code>FluidVersion</code>.</li>
+            <li><code>FluidVersion</code> &mdash; a comparable <code>(major, minor, patch)</code> tuple.</li>
+        </ul>
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/ref/extensions">Extensions</a>.</p>
+    </article>
+{% endblock %}
