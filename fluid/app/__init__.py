@@ -7,6 +7,14 @@ home_router = APIRouter(
 docs_router = APIRouter(
     default_response_class=HTMLResponse
 )
+ocean_router = APIRouter(
+    default_response_class=HTMLResponse
+)
+
+
+def setup_ocean():
+    from fluid.app.discovery import handle_request as discovery
+    ocean_router.get("/")(discovery)
 
 from fluid.app.index import handle_request as index
 home_router.get("/")(index)

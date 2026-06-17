@@ -11,6 +11,7 @@ translations/
 dist/
 logs/
 myapp/
+additives/
 
 [files]
 home.ini
