@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
     const API = "/hub/api/v1"
+    const i18n = window.ocI18n || {}
 
     const results = document.getElementById("ocResults")
     const more = document.getElementById("ocMore")
@@ -330,9 +331,9 @@ document.addEventListener("DOMContentLoaded", () => {
             .then(res => res.ok ? res.json() : null)
             .then(data => {
                 if (data?.status === "paid" && data?.key) {
-                    showPanel("Payment complete! Your license key:", data.key)
+                    showPanel(i18n.payment_complete || "Payment complete! Your license key:", data.key)
                 } else {
-                    showPanel("Your payment has not been confirmed yet. Check back in a moment.")
+                    showPanel(i18n.payment_pending || "Your payment has not been confirmed yet. Check back in a moment.")
                 }
             })
             .catch(() => {})

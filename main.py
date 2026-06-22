@@ -1,4 +1,5 @@
 from webfluid import Fluid
+from webfluid.core.ext import babel
 
 
 def create_app() -> Fluid:
@@ -16,14 +17,22 @@ def create_app() -> Fluid:
     if app.name == "home":
         from fluid.app import home_router
         app.include_router(home_router)
+
+        from fluid.i18n.home import translations
+        babel.update_translations("messages", translations)
+
     elif app.name == "docs":
         from fluid.app import docs_router
         app.include_router(docs_router)
         app.jinja_env.globals["versions"] = app.config["VERSIONS"].keys()
+
     elif app.name == "ocean":
         from fluid.app import ocean_router, setup_ocean
         setup_ocean()
         app.include_router(ocean_router)
+
+        from fluid.i18n.ocean import translations
+        babel.update_translations("messages", translations)
 
     app.jinja_env.globals["latest"] = app.config["LATEST_VERSION"]
     app.jinja_env.globals["home"] = app.config.get("HOME_URL", "https://webfluid.dev")

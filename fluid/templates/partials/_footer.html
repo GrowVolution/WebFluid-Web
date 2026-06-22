@@ -1,10 +1,10 @@
 {% macro site_footer() %}
     <footer class="web-footer">
         <div class="web-footer-inner">
-            <span class="web-footer-text">&copy; {{ YEAR | default(2026) }} GrowVolution e.V. — MIT License</span>
+            <span class="web-footer-text">&copy; {{ YEAR | default(2026) }} GrowVolution e.V. — MIT {{ _("License") }}</span>
             <div class="web-footer-links">
-                <a href="https://growvolution.org/imprint" class="web-footer-link">Imprint</a>
-                <a href="https://growvolution.org/privacy" class="web-footer-link">Privacy</a>
+                <a href="https://growvolution.org/imprint" class="web-footer-link">{{ _("Imprint") }}</a>
+                <a href="https://growvolution.org/privacy" class="web-footer-link">{{ _("Privacy") }}</a>
             </div>
         </div>
     </footer>

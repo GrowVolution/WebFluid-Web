@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% from "partials/_footer.html" import site_footer %}
 
-{% block title %}Ocean — The WebFluid Package Hub{% endblock %}
+{% block title %}{{ _("OCEAN_TITLE") }}{% endblock %}
 
 {% block web_head %}
-    <meta name="description" content="Discover, explore and license WebFluid additives, extensions and bundles. Browse the latest releases on Ocean, the official WebFluid package hub.">
+    <meta name="description" content="{{ _("OCEAN_META_DESC") }}">
 {% endblock %}
 
 {% block nav %}
@@ -12,19 +12,27 @@
         <div class="docs-topbar">
             <a class="docs-brand" href="/">
                 <img src="{{ url_for(wf_static, path='img/logo.png') }}" alt="Logo">
-                <span>Ocean Hub</span>
+                <span>WebFluid Ocean</span>
             </a>
 
             <div class="docs-topbar-links">
-                <a href="{{ home }}" class="docs-topbar-link">Home</a>
-                <a href="{{ docs }}/latest/" class="docs-topbar-link">Docs</a>
-                <a href="/hub/" class="docs-topbar-link">Publish</a>
+                <div class="oc-nav">
+                    <input type="checkbox" id="ocNavToggle" class="oc-nav-checkbox">
+                    <label for="ocNavToggle" class="oc-nav-toggle" aria-label="{{ _('OCEAN_NAV_MENU') }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    </label>
+                    <div class="oc-nav-menu">
+                        <a href="{{ home }}" class="docs-topbar-link">{{ _("OCEAN_NAV_HOME") }}</a>
+                        <a href="{{ docs }}/latest/" class="docs-topbar-link">{{ _("OCEAN_NAV_DOCS") }}</a>
+                        <a href="/hub/" class="docs-topbar-link">{{ _("OCEAN_NAV_PUBLISH") }}</a>
+                    </div>
+                </div>
                 {% if user %}
                     <a href="/users/" class="oc-avatar" id="ocAvatar" title="{{ user.username }}">
                         <span>{{ user.username[:1] | upper }}</span>
                     </a>
                 {% else %}
-                    <a href="/users/" class="web-btn web-btn-soft oc-login">Login</a>
+                    <a href="/users/" class="web-btn web-btn-soft oc-login">{{ _("OCEAN_NAV_LOGIN") }}</a>
                 {% endif %}
             </div>
         </div>
@@ -32,13 +40,12 @@
 {% endblock %}
 
 {% block content %}
-    <div class="web lp">
+    <div class="web lp oc-page">
         <section class="oc-hero">
-            <span class="lp-eyebrow"><span class="pulse"></span> Ocean — WebFluid Package Hub</span>
-            <h1 class="oc-title">Discover additives, extensions<br>& bundles</h1>
+            <span class="lp-eyebrow"><span class="pulse"></span> {{ _("OCEAN_HERO_EYEBROW") }}</span>
+            <h1 class="oc-title">{{ _("OCEAN_HERO_TITLE_1") }}<br>& {{ _("OCEAN_HERO_BUNDLES") }}</h1>
             <p class="oc-sub">
-                Browse the latest releases from the WebFluid ecosystem. Open source additives,
-                commercial extensions and curated bundles — all in one place.
+                {{ _("OCEAN_HERO_SUB") }}
             </p>
 
             <div id="ocFilters" class="oc-filters">
@@ -47,7 +54,7 @@
                             type="search"
                             id="ocSearch"
                             value="{{ q }}"
-                            placeholder="Search by package id..."
+                            placeholder="{{ _('OCEAN_SEARCH_PLACEHOLDER') }}"
                             class="oc-input"
                             autocomplete="off"
                     >
@@ -55,42 +62,42 @@
                 </div>
                 <button type="button" id="ocFilterToggle" class="web-btn web-btn-soft oc-filter-toggle">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
-                    Filters
+                    {{ _("OCEAN_FILTERS") }}
                 </button>
             </div>
 
             <div id="ocFilterPanel" class="oc-filter-panel" hidden>
                 <div class="oc-filter-group">
-                    <span class="oc-filter-legend">Types</span>
+                    <span class="oc-filter-legend">{{ _("OCEAN_FILTER_TYPES") }}</span>
                     <div class="oc-filter-options">
-                        <label class="oc-check"><input type="checkbox" id="ocTypeAll" checked> All</label>
-                        <label class="oc-check" data-type-label="additives"><input type="checkbox" class="oc-type" value="additives"> Additives</label>
-                        <label class="oc-check" data-type-label="extensions"><input type="checkbox" class="oc-type" value="extensions"> Extensions</label>
-                        <label class="oc-check" data-type-label="bundles"><input type="checkbox" class="oc-type" value="bundles"> Bundles</label>
+                        <label class="oc-check"><input type="checkbox" id="ocTypeAll" checked> {{ _("OCEAN_FILTER_ALL") }}</label>
+                        <label class="oc-check" data-type-label="additives"><input type="checkbox" class="oc-type" value="additives"> {{ _("OCEAN_TYPE_ADDITIVES") }}</label>
+                        <label class="oc-check" data-type-label="extensions"><input type="checkbox" class="oc-type" value="extensions"> {{ _("OCEAN_TYPE_EXTENSIONS") }}</label>
+                        <label class="oc-check" data-type-label="bundles"><input type="checkbox" class="oc-type" value="bundles"> {{ _("OCEAN_TYPE_BUNDLES") }}</label>
                     </div>
                 </div>
 
                 <div class="oc-filter-group">
-                    <span class="oc-filter-legend">Licensing</span>
+                    <span class="oc-filter-legend">{{ _("OCEAN_FILTER_LICENSING") }}</span>
                     <div class="oc-filter-options">
-                        <label class="oc-check"><input type="checkbox" id="ocLicenseAll" checked> All</label>
-                        <label class="oc-check" data-license-label="open"><input type="checkbox" class="oc-license" value="open"> Open Source</label>
-                        <label class="oc-check" data-license-label="paid"><input type="checkbox" class="oc-license" value="paid"> Paid</label>
+                        <label class="oc-check"><input type="checkbox" id="ocLicenseAll" checked> {{ _("OCEAN_FILTER_ALL") }}</label>
+                        <label class="oc-check" data-license-label="open"><input type="checkbox" class="oc-license" value="open"> {{ _("OCEAN_LICENSE_OPEN") }}</label>
+                        <label class="oc-check" data-license-label="paid"><input type="checkbox" class="oc-license" value="paid"> {{ _("OCEAN_LICENSE_PAID") }}</label>
                     </div>
                 </div>
 
                 <div class="oc-filter-group">
-                    <span class="oc-filter-legend">Sort by</span>
+                    <span class="oc-filter-legend">{{ _("OCEAN_SORT_BY") }}</span>
                     <div class="oc-filter-options">
-                        <label class="oc-check"><input type="radio" name="ocSort" value="newest" checked> Newest first</label>
-                        <label class="oc-check"><input type="radio" name="ocSort" value="oldest"> Oldest first</label>
-                        <label class="oc-check oc-sort-price"><input type="radio" name="ocSort" value="price_asc"> Price ascending</label>
-                        <label class="oc-check oc-sort-price"><input type="radio" name="ocSort" value="price_desc"> Price descending</label>
+                        <label class="oc-check"><input type="radio" name="ocSort" value="newest" checked> {{ _("OCEAN_SORT_NEWEST") }}</label>
+                        <label class="oc-check"><input type="radio" name="ocSort" value="oldest"> {{ _("OCEAN_SORT_OLDEST") }}</label>
+                        <label class="oc-check oc-sort-price"><input type="radio" name="ocSort" value="price_asc"> {{ _("OCEAN_SORT_PRICE_ASC") }}</label>
+                        <label class="oc-check oc-sort-price"><input type="radio" name="ocSort" value="price_desc"> {{ _("OCEAN_SORT_PRICE_DESC") }}</label>
                     </div>
                 </div>
 
                 <div class="oc-filter-actions">
-                    <button type="button" id="ocApply" class="web-btn web-btn-primary">Apply filters</button>
+                    <button type="button" id="ocApply" class="web-btn web-btn-primary">{{ _("OCEAN_APPLY_FILTERS") }}</button>
                 </div>
             </div>
         </section>
@@ -106,7 +113,7 @@
                         data-offset="{{ next_offset }}"
                         {{ "hidden" if not has_more }}
                 >
-                    Load more
+                    {{ _("OCEAN_LOAD_MORE") }}
                 </button>
             </div>
         </section>
@@ -115,7 +122,7 @@
             <div class="oc-panel-card">
                 <p id="ocPanelText"></p>
                 <code id="ocPanelKey" hidden></code>
-                <button type="button" class="web-btn web-btn-ghost" id="ocPanelClose">Close</button>
+                <button type="button" class="web-btn web-btn-ghost" id="ocPanelClose">{{ _("OCEAN_CLOSE") }}</button>
             </div>
         </div>
 
@@ -124,5 +131,11 @@
 {% endblock %}
 
 {% block web_scripts %}
+    <script>
+        window.ocI18n = {
+            payment_complete: {{ _("OCEAN_PAYMENT_COMPLETE") | tojson }},
+            payment_pending: {{ _("OCEAN_PAYMENT_PENDING") | tojson }}
+        }
+    </script>
     <script src="{{ url_for('static', path='js/discovery.js') }}" defer></script>
 {% endblock %}

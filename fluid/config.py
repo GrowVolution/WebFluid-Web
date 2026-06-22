@@ -23,3 +23,6 @@ class Config(MyConfig):
         },
     }
     LATEST_VERSION = "1.0.0a1"
+
+    BABEL_DEFAULT_LOCALE = "en"
+    BABEL_SUPPORTED_LOCALES = [BABEL_DEFAULT_LOCALE, "de"]
