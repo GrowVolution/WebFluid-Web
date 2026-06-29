@@ -22,3 +22,4 @@ tailwind.css
 _my_config.py
 start.bat
 *.db
+package-lock.json
