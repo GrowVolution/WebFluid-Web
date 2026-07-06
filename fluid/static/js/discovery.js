@@ -1,6 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
     const API = "/hub/api/v1"
-    const i18n = window.ocI18n || {}
 
     const results = document.getElementById("ocResults")
     const more = document.getElementById("ocMore")
@@ -18,30 +17,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const licenseChecks = [...document.querySelectorAll(".oc-license")]
     const sortRadios = [...document.querySelectorAll("input[name='ocSort']")]
     const priceSorts = sortRadios.filter(r => r.value === "price_asc" || r.value === "price_desc")
-
-    const panel = document.getElementById("ocPanel")
-    const panelText = document.getElementById("ocPanelText")
-    const panelKey = document.getElementById("ocPanelKey")
-    document.getElementById("ocPanelClose")?.addEventListener("click", () => panel.hidden = true)
-
-    const authed = !!avatar
-
-    function getCookie(name) {
-        for (const cookie of document.cookie.split("; ")) {
-            const [key, value] = cookie.split("=")
-            if (key === name) return decodeURIComponent(value)
-        }
-        return null
-    }
-
-    function showPanel(text, key) {
-        panelText.textContent = text
-        if (panelKey) {
-            panelKey.textContent = key || ""
-            panelKey.hidden = !key
-        }
-        panel.hidden = false
-    }
 
     function escapeHtml(value) {
         const div = document.createElement("div")
@@ -312,29 +287,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 img.src = data.url
                 img.alt = ""
                 avatar.replaceChildren(img)
-            })
-            .catch(() => {})
-    }
-
-    const sessionId = new URLSearchParams(window.location.search).get("session_id")
-    if (sessionId && authed) {
-        history.replaceState(null, "", "/")
-        fetch(`${API}/purchases/confirm`, {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-Token": getCookie("csrf_token") || ""
-            },
-            body: JSON.stringify({ session_id: sessionId })
-        })
-            .then(res => res.ok ? res.json() : null)
-            .then(data => {
-                if (data?.status === "paid" && data?.key) {
-                    showPanel(i18n.payment_complete || "Payment complete! Your license key:", data.key)
-                } else {
-                    showPanel(i18n.payment_pending || "Your payment has not been confirmed yet. Check back in a moment.")
-                }
             })
             .catch(() => {})
     }

@@ -28,6 +28,11 @@
   "Durchstöbere die neuesten Releases aus dem WebFluid-Ökosystem. Open-Source-Additives, kommerzielle Extensions und kuratierte Bundles — alles an einem Ort."
   ],
 
+  "OCEAN_TESTPHASE_TEXT": [
+  "Ocean is in an open test phase around the WebFluid 1.0.0a2 release — we'd love to hear your feedback, wishes and ideas anytime at",
+  "Ocean befindet sich in einer offenen Testphase rund um das Release von WebFluid 1.0.0a2 — über dein Feedback, deine Wünsche und Ideen freuen wir uns jederzeit unter"
+  ],
+
   "OCEAN_SEARCH_PLACEHOLDER": [
   "Search by package id...",
   "Nach Paket-ID suchen..."
@@ -49,16 +54,6 @@
   "OCEAN_APPLY_FILTERS": ["Apply filters", "Filter anwenden"],
 
   "OCEAN_LOAD_MORE": ["Load more", "Mehr laden"],
-  "OCEAN_CLOSE": ["Close", "Schließen"],
-
-  "OCEAN_PAYMENT_COMPLETE": [
-  "Payment complete! Your license key:",
-  "Zahlung abgeschlossen! Dein Lizenzkey:"
-  ],
-  "OCEAN_PAYMENT_PENDING": [
-  "Your payment has not been confirmed yet. Check back in a moment.",
-  "Deine Zahlung wurde noch nicht bestätigt. Schau gleich noch einmal vorbei."
-  ],
 
   "Imprint": ["Imprint", "Impressum"],
   "Privacy": ["Privacy", "Datenschutz"],

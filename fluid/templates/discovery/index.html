@@ -41,6 +41,15 @@
 
 {% block content %}
     <div class="web lp oc-page">
+        <div class="oc-testbanner" role="note">
+            <div class="oc-testbanner-inner">
+                <p class="oc-testbanner-text">
+                    {{ _("OCEAN_TESTPHASE_TEXT") }}
+                    <a href="mailto:developers@webfluid.dev" class="oc-testbanner-link">developers@webfluid.dev</a>
+                </p>
+            </div>
+        </div>
+
         <section class="oc-hero">
             <span class="lp-eyebrow"><span class="pulse"></span> {{ _("OCEAN_HERO_EYEBROW") }}</span>
             <h1 class="oc-title">{{ _("OCEAN_HERO_TITLE_1") }}<br>& {{ _("OCEAN_HERO_BUNDLES") }}</h1>
@@ -118,24 +127,10 @@
             </div>
         </section>
 
-        <div id="ocPanel" class="oc-panel" hidden>
-            <div class="oc-panel-card">
-                <p id="ocPanelText"></p>
-                <code id="ocPanelKey" hidden></code>
-                <button type="button" class="web-btn web-btn-ghost" id="ocPanelClose">{{ _("OCEAN_CLOSE") }}</button>
-            </div>
-        </div>
-
         {{ site_footer() }}
     </div>
 {% endblock %}
 
 {% block web_scripts %}
-    <script>
-        window.ocI18n = {
-            payment_complete: {{ _("OCEAN_PAYMENT_COMPLETE") | tojson }},
-            payment_pending: {{ _("OCEAN_PAYMENT_PENDING") | tojson }}
-        }
-    </script>
     <script src="{{ url_for('static', path='js/discovery.js') }}" defer></script>
 {% endblock %}

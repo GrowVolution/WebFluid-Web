@@ -1,0 +1,74 @@
+services:
+  home:
+    image: gr0wvolution/webfluid:alpha
+    command: ["home", "-h", "0.0.0.0"]
+    volumes:
+      - /mnt/bulk/webfluid:/app
+    networks:
+      - traefik
+      - backend
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == worker
+      labels:
+        - traefik.enable=true
+
+        - traefik.http.routers.fluid.entrypoints=websecure
+        - traefik.http.routers.fluid.rule=Host(`webfluid.dev`) || Host(`www.webfluid.dev`)
+        - traefik.http.routers.fluid.service=fluid
+        - traefik.http.routers.fluid.tls=true
+
+        - traefik.http.services.fluid.loadbalancer.server.port=8000
+
+  docs:
+    image: gr0wvolution/webfluid:alpha
+    command: ["docs", "-h", "0.0.0.0"]
+    volumes:
+      - /mnt/bulk/webfluid:/app
+    networks:
+      - traefik
+      - backend
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == worker
+      labels:
+        - traefik.enable=true
+
+        - traefik.http.routers.fluidDocs.entrypoints=websecure
+        - traefik.http.routers.fluidDocs.rule=Host(`docs.webfluid.dev`)
+        - traefik.http.routers.fluidDocs.service=fluidDocs
+        - traefik.http.routers.fluidDocs.tls=true
+
+        - traefik.http.services.fluidDocs.loadbalancer.server.port=8000
+
+  ocean:
+    image: gr0wvolution/webfluid:alpha
+    command: [ "ocean", "-h", "0.0.0.0" ]
+    volumes:
+      - /mnt/bulk/webfluid:/app
+    networks:
+      - traefik
+      - backend
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == worker
+      labels:
+        - traefik.enable=true
+
+        - traefik.http.routers.fluidOcean.entrypoints=websecure
+        - traefik.http.routers.fluidOcean.rule=Host(`ocean.webfluid.dev`)
+        - traefik.http.routers.fluidOcean.service=fluidOcean
+        - traefik.http.routers.fluidOcean.tls=true
+
+        - traefik.http.services.fluidOcean.loadbalancer.server.port=8000
+
+
+networks:
+  traefik:   { external: true }
+  backend:   { external: true }

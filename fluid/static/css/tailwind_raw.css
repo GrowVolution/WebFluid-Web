@@ -76,14 +76,14 @@
         @apply text-primary-5 bg-gradient-to-r from-tertiary-1 to-info-1;
         box-shadow: 0 12px 35px color-mix(in srgb, var(--tertiary-2) 45%, transparent);
     }
-    .web-btn-primary:hover {
+    .web-btn-primary:hover:not(:disabled) {
         @apply -translate-y-0.5;
         box-shadow: 0 18px 45px color-mix(in srgb, var(--tertiary-2) 55%, transparent);
     }
     .web-btn-ghost {
         @apply text-slate-100 bg-white/5 border border-white/10;
     }
-    .web-btn-ghost:hover {
+    .web-btn-ghost:hover:not(:disabled) {
         @apply bg-white/10 -translate-y-0.5;
     }
     .web-btn-soft {
@@ -91,9 +91,12 @@
         background: color-mix(in srgb, var(--tertiary-3) 30%, transparent);
         border: 1px solid color-mix(in srgb, var(--tertiary-1) 35%, transparent);
     }
-    .web-btn-soft:hover {
+    .web-btn-soft:hover:not(:disabled) {
         @apply -translate-y-0.5;
         background: color-mix(in srgb, var(--tertiary-3) 45%, transparent);
+    }
+    .web-btn:disabled {
+        @apply opacity-50 cursor-not-allowed;
     }
 
 
@@ -611,6 +614,28 @@
     }
     .oc-login {
         @apply ml-2 !px-4 !py-2 text-sm;
+    }
+
+
+    .oc-testbanner {
+        @apply w-full border-b border-white/10;
+        background: linear-gradient(90deg,
+            color-mix(in srgb, var(--tertiary-2) 16%, transparent),
+            color-mix(in srgb, var(--info-3) 12%, transparent));
+    }
+    .oc-testbanner-inner {
+        @apply max-w-7xl mx-auto px-6 py-2.5 text-center;
+    }
+    .oc-testbanner-text {
+        @apply text-sm leading-relaxed text-slate-200;
+    }
+    .oc-testbanner-link {
+        @apply font-semibold underline underline-offset-2 transition;
+        color: var(--tertiary-1);
+        text-decoration-color: color-mix(in srgb, var(--tertiary-1) 45%, transparent);
+    }
+    .oc-testbanner-link:hover {
+        text-decoration-color: var(--tertiary-1);
     }
 
 
