@@ -1,5 +1,8 @@
 from webfluid import Fluid
 from webfluid.core.ext import babel
+from webfluid.utils import try_import, enabled
+from webfluid.utils.additives import installed_additives
+from pathlib import Path
 
 
 def create_app() -> Fluid:
@@ -34,11 +37,21 @@ def create_app() -> Fluid:
         from fluid.i18n.ocean import translations
         babel.update_translations("messages", translations)
 
+        if enabled("CONTAINERIZED"):
+            cwd = Path(__file__).parent.resolve()
+            for additive in installed_additives(cwd / "additives"):
+                a, _, p = additive
+                if not enabled(a): continue
+                mod = try_import(f"additives.{p}")
+                adt = getattr(mod, "additive", None)
+                if not adt: continue
+                adt.install()
+
     app.jinja_env.globals["latest"] = app.config["LATEST_VERSION"]
     app.jinja_env.globals["home"] = app.config.get("HOME_URL", "https://webfluid.dev")
     app.jinja_env.globals["docs"] = app.config.get("DOCS_URL", "https://docs.webfluid.dev")
     app.jinja_env.globals["ocean"] = app.config.get("OCEAN_URL", "https://ocean.webfluid.dev")
-                
+
     return app
 
 
