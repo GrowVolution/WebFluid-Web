@@ -1,0 +1,329 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import info, warning %}
+
+{% block title %}Mail — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Extensions</span>
+        <h1 class="doc-h1">Mail</h1>
+        <p class="doc-lead">
+            Our app can store data and migrate its schema by now. The next thing almost every
+            real application needs is a way to talk to its users. So let's wire up the built-in
+            mailer and send our first message &mdash; but first, our project has quietly outgrown
+            a single <code>main.py</code>, and this is the perfect moment to tidy it up.
+        </p>
+
+        <h2>Giving the app room to grow</h2>
+        <p>
+            Back in the <a href="/v/{{ version }}/ext/migrate">Migrate</a> chapter we turned
+            <code>main.py</code> into an app factory, and <code>create_app</code> has been wiring every
+            route by hand &mdash; <code>app.get("/")(home)</code>, <code>app.get("/health")(health)</code>
+            and so on. That was fine for four routes, but it won't scale as we keep bolting on features. So
+            this is the moment to give our routes a proper home &mdash; exactly the layout
+            <code>wf create project</code> will lay down for us later on.
+            <br><br>
+            HTML pages and JSON endpoints have different jobs, so the framework keeps them apart in two
+            packages: <code>fluid/app</code> for pages, <code>fluid/api</code> for JSON. Each package owns
+            a router, and <code>create_app</code> simply includes them. Let's start with the page. Our
+            <code>home</code> handler moves into <code>fluid/app</code>:
+        </p>
+
+        {{ code(
+            "fluid/app/index.py", "python",
+            '''from webfluid.core.context import FluidContext
+
+
+async def handle_request():
+    ctx = FluidContext.current()
+    return await ctx.fluid.render(
+        "index.html",
+        title="Hello World!",
+        name="my friend"
+    )'''
+        ) }}
+
+        <p>
+            Notice the handler no longer reaches for a module-level <code>fluid</code> &mdash; in a factory
+            there isn't one when the module is imported. Instead it asks the framework for the current
+            request's app through <code>FluidContext.current()</code>. That is the same request context the
+            <a href="/v/{{ version }}/utils/runtime">Runtime</a> chapter digs into; for now just read it as
+            "the app handling this request". The package's <code>__init__.py</code> then exposes the router
+            that <code>create_app</code> will include:
+        </p>
+
+        {{ code(
+            "fluid/app/__init__.py", "python",
+            '''from fastapi import APIRouter
+from fastapi.responses import HTMLResponse
+
+app_router = APIRouter(default_response_class=HTMLResponse)
+
+# index.py owns the handler; here we attach it to the router.
+from fluid.app.index import handle_request as index
+app_router.get("/")(index)'''
+        ) }}
+
+        <p>
+            The JSON side has the same shape. Our health check and the two <code>my-model</code> endpoints
+            move into <code>fluid/api</code>, attached to an <code>api_router</code>. The health check is a
+            tiny handler of its own:
+        </p>
+
+        {{ code(
+            "fluid/api/health.py", "python",
+            '''async def handle_request():
+    return {"status": "ok"}'''
+        ) }}
+
+        <p>
+            The <code>my-model</code> handlers are unchanged from the SQLAlchemy chapter for now &mdash;
+            they land in <code>fluid/api/models.py</code>, which we'll look at again in a second once mail
+            gives them a reason to change. The package <code>__init__.py</code> collects everything onto the
+            router:
+        </p>
+
+        {{ code(
+            "fluid/api/__init__.py", "python",
+            '''from fastapi import APIRouter
+
+api_router = APIRouter()
+
+from fluid.api.health import handle_request as health
+from fluid.api.models import get_model, add_model
+
+api_router.get("/health")(health)
+api_router.get("/my-model")(get_model)
+api_router.post("/my-model")(add_model)'''
+        ) }}
+
+        <p>
+            And <code>main.py</code>? It barely has anything left to do. The factory assembles the app from
+            its parts and includes the two routers:
+        </p>
+
+        {{ code(
+            "main.py", "python",
+            '''from webfluid import Fluid
+from webfluid.core.ext import scheduler
+from apscheduler.triggers.interval import IntervalTrigger
+
+from extension.main import MyExtension
+from fluid.jobs import heart
+
+my_ext = MyExtension()
+scheduler.add_job(heart, IntervalTrigger(seconds=5))
+
+
+def create_app() -> Fluid:
+    app = Fluid(__name__)
+
+    from fluid.app import app_router
+    from fluid.api import api_router
+    app.include_router(app_router)
+    app.include_router(api_router)
+
+    my_ext.expand_fluid(app)
+
+    return app
+
+
+if __name__ == "__main__":
+    create_app().mix()'''
+        ) }}
+
+        <p>
+            That is the whole point of the factory: <code>main.py</code> wires the app together, and every
+            handler lives where you'd expect to find it. With the routes settled, we can get back to what we
+            came here for.
+        </p>
+
+        <h2>Enabling the mailer</h2>
+        <p>
+            Like every battery, Mail is optioned through a switch. Set <code>EXT_MAIL = 1</code> and
+            the framework expands your fluid with a ready-to-use <code>Mail</code> instance. The mailer
+            speaks SMTP and ships both a synchronous and an asynchronous client, so it fits whatever
+            half of your app you are calling it from.
+            <br><br>
+            All credentials and server settings live in your app config. The only thing the mailer
+            insists on is that <code>MAIL_USERNAME</code> and <code>MAIL_PASSWORD</code> are either
+            both present or both absent. Everything else has a sensible default:
+        </p>
+
+        {{ code(
+            "app_configs/app.ini", "ini",
+            """[general]
+SECRET_KEY = supersecret
+
+[data]
+DATABASE_URI = sqlite:///app.db
+
+[extensions]
+EXT_SQLALCHEMY = 1
+EXT_MAIL = 1
+
+[mail]
+MAIL_SERVER = localhost
+MAIL_PORT = 1025
+MAIL_USE_TLS = 0
+MAIL_DEFAULT_SENDER = noreply@example.org"""
+        ) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            For local testing you do not need a real mail server. A throwaway debugging SMTP is just
+            one command away: <code>python -m aiosmtpd -n -l localhost:1025</code>. Every mail you send
+            will then be printed straight to that terminal instead of leaving your machine.
+        """) }}
+
+        <h3>The config values</h3>
+        <p>These are the settings the extension reads when your app initializes:</p>
+        <ul>
+            <li><code>MAIL_SERVER</code> — SMTP host. Default <strong>localhost</strong>.</li>
+            <li><code>MAIL_PORT</code> — SMTP port. Default <strong>587</strong>.</li>
+            <li><code>MAIL_USE_TLS</code> — implicit TLS for the async client. Default <strong>True</strong>.</li>
+            <li><code>MAIL_USE_STARTTLS</code> — upgrade the connection via STARTTLS. Default <strong>False</strong>.</li>
+            <li><code>MAIL_TIMEOUT</code> — connection timeout in seconds. Default <strong>10</strong>.</li>
+            <li><code>MAIL_USERNAME</code> / <code>MAIL_PASSWORD</code> — login credentials, all or nothing.</li>
+            <li><code>MAIL_DEFAULT_SENDER</code> — the From address used when you don't pass one.</li>
+        </ul>
+
+        <h2>A home for services</h2>
+        <p>
+            You reach the mailer the same way you reached the database: through the shared extension
+            registry in <code>webfluid.core.ext</code>. And just like our routes, recurring business
+            logic deserves a home of its own rather than piling up inside a handler. So we start a
+            <code>services</code> package inside the fluid directory and let it own the mailing:
+        </p>
+
+        {{ code(
+            "fluid/services/notify.py", "python",
+            '''from webfluid.core.ext import mail
+
+
+def welcome(address: str, value: str):
+    # The body is a mapping of MIME subtype -> content. So you can
+    # ship a plain text and an html alternative in one go.
+    mail.send(
+        address,
+        subject="Welcome aboard!",
+        body={
+            "plain": f"Saved your model: {value}. Thanks for trying WebFluid!",
+            "html": f"&lt;p&gt;Saved your model &lt;b&gt;{value}&lt;/b&gt;.&lt;/p&gt;"
+        }
+    )
+
+    # send() returns immediately. Per default it hands the actual
+    # delivery to a background thread (fake_async=True), so your
+    # request is never blocked by a slow mail server.'''
+        ) }}
+
+        <p>
+            Now the <code>my-model</code> handler from a moment ago finally has its reason to change: it
+            calls <code>welcome</code> right after a model is created. This is the whole
+            <code>fluid/api/models.py</code>, with the new line folded in:
+        </p>
+
+        {{ code(
+            "fluid/api/models.py", "python",
+            '''from webfluid.core.ext import db
+from fastapi import Request
+from fastapi.exceptions import HTTPException
+from sqlalchemy import select
+
+from fluid.models import MyModel
+from fluid.services.notify import welcome
+
+
+async def get_model(request: Request):
+    model_id = request.query_params.get("id")
+    if not model_id:
+        raise HTTPException(status_code=400, detail="Bad Request")
+
+    async with db.async_executor(model=MyModel) as e:
+        results = await e.exec(
+            select(MyModel).where(MyModel.id == model_id)
+        )
+        result = results.first()
+        if not result:
+            raise HTTPException(status_code=404, detail="Model not found")
+
+        return {"model_id": model_id, "value": result.value}
+
+
+async def add_model(request: Request):
+    data = await request.json()
+    value = data.get("value")
+    if not value:
+        raise HTTPException(status_code=400, detail="Bad Request")
+
+    async with db.async_executor(model=MyModel) as e:
+        model = await e.insert(MyModel(value), flush=True)
+
+    # Fire and forget. The threaded sender does the rest.
+    welcome("friend@example.org", model.value)
+
+    return {"model_id": model.id, "value": model.value}'''
+        ) }}
+
+        <h2>Sync, async and raw clients</h2>
+        <p>
+            The mailer mirrors the rest of the framework: everything has an async counterpart. Inside
+            an async handler you can await the delivery directly and keep full control over when it
+            actually happened:
+        </p>
+
+        {{ code(
+            "example", "python",
+            '''from webfluid.core.ext import mail
+
+# Blocking, but offloaded to a thread per default:
+mail.send("to@example.org", "Subject", {"plain": "Hello!"})
+
+# Truly awaited delivery:
+await mail.send_async("to@example.org", "Subject", {"plain": "Hello!"})
+
+# Force the sync send to block instead of threading:
+mail.send("to@example.org", "Subject", {"plain": "Hello!"}, fake_async=False)'''
+        ) }}
+
+        <p>
+            Both <code>send</code> and <code>send_async</code> accept <code>attachments</code>,
+            <code>from_email</code>, <code>cc</code> and <code>bcc</code>. An attachment is just a
+            small dictionary:
+        </p>
+
+        {{ code(
+            "example", "python",
+            '''await mail.send_async(
+    "to@example.org",
+    "Your report",
+    {"plain": "See attached."},
+    attachments=[{
+        "bytes": pdf_bytes,        # bytes or str
+        "type": "pdf",            # MIME application subtype
+        "filename": "report.pdf"
+    }]
+)'''
+        ) }}
+
+        <p>
+            And if our conventions ever get in your way, both <code>mail.client()</code> and
+            <code>mail.async_client()</code> hand you a bare (logged-in) SMTP connection as a context
+            manager, so you can drive the protocol yourself.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            The mailer keeps no connection pool. Every send opens and closes its own SMTP session.
+            That is perfectly fine for transactional mail, but if you are blasting out large batches
+            you'll want to grab a single client() context and reuse it for the whole run.
+        """) }}
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/ext/babel">Babel</a>.</p>
+    </article>
+{% endblock %}

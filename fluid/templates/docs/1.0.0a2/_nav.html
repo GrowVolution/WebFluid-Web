@@ -1,0 +1,94 @@
+{% from "partials/_nav.html" import link, group with context %}
+{% set base = "/latest/" if version == "latest" else "/v/" ~ version ~ "/" %}
+
+{{ link(
+    base,
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M9 22V12h6v10"></path></svg>',
+    "Overview"
+) }}
+
+{{ link(
+    base ~ "get-started",
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9z"></path></svg>',
+    "Getting Started"
+) }}
+
+{{ group(
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>',
+    "Configuration",
+    {
+        base ~ "config/app-config": "App configs",
+        base ~ "config/config-class": "Config classes"
+    }
+) }}
+
+{{ group(
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path><line x1="16" y1="8" x2="2" y2="22"></line><line x1="17.5" y1="15" x2="9" y2="15"></line></svg>',
+    "Extensions",
+    {
+        base ~ "ext/base": "Introduction",
+        base ~ "ext/scheduling": "Scheduling",
+        base ~ "ext/sqlalchemy": "SQLAlchemy",
+        base ~ "ext/migrate": "Migrate",
+        base ~ "ext/mailman": "Mail",
+        base ~ "ext/babel": "Babel",
+        base ~ "ext/security": "Security",
+        base ~ "ext/events": "Events",
+        base ~ "ext/cache": "Cache",
+        base ~ "ext/jwt": "JWTManager"
+    }
+) }}
+
+{{ group(
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><path d="M8 21h8"></path><path d="M12 17v4"></path></svg>',
+    "Frontend",
+    {
+        base ~ "surface/tooling": "Introduction",
+        base ~ "surface/frontend": "Integration",
+        base ~ "surface/jinja": "Template resolution"
+    }
+) }}
+
+{{ group(
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>',
+    "Additives",
+    {
+        base ~ "additives/intro": "Introduction",
+        base ~ "additives/base": "Base Additives",
+        base ~ "additives/contract": "Interaction between"
+    }
+) }}
+
+{{ group(
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>',
+    "Framework utility",
+    {
+        base ~ "utils/lifecycle": "Lifecycle",
+        base ~ "utils/runtime": "Runtime",
+        base ~ "utils/logging": "Logging"
+    }
+) }}
+
+{{ group(
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>',
+    "CLI",
+    {
+        base ~ "cli/wf": "Introduction",
+        base ~ "cli/create": "Create",
+        base ~ "cli/run": "Run",
+        base ~ "cli/ocean": "Ocean"
+    }
+) }}
+
+{{ group(
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>',
+    "Reference",
+    {
+        base ~ "ref": "Overview",
+        base ~ "ref/core": "Core",
+        base ~ "ref/extensions": "Extensions",
+        base ~ "ref/surface": "Surface",
+        base ~ "ref/additives": "Additives",
+        base ~ "ref/utils": "Utils",
+    }
+) }}

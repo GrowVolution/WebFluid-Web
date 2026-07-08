@@ -1,0 +1,127 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import info, warning %}
+
+{% block title %}Base Additives — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Additives</span>
+        <h1 class="doc-h1">Base Additives</h1>
+        <p class="doc-lead">
+            Some features are really a foundation that several variants build on: a shared layout, a set
+            of common routes, a battery of models. WebFluid models that with <strong>base
+            Additives</strong> &mdash; Additives that aren't meant to run on their own, but to be
+            extended.
+        </p>
+
+        <h2>What makes an Additive a base</h2>
+        <p>
+            A base Additive is declared with <code>"type": "base"</code> and, because it is a
+            foundation rather than a finished feature, it may not declare a frontend. It is never
+            enabled directly in your app config either; instead, a regular (default) Additive picks it
+            up and extends it.
+        </p>
+
+        {{ code(
+            "additives/core/manifest.json", "json",
+            '''{
+  "id": "core",
+  "version": "1.0.0",
+  "type": "base",
+  "frontend": { "type": "none" },
+  "name": "Core"
+}'''
+        ) }}
+
+        <p>
+            A base looks like any other Additive otherwise &mdash; it has routers, templates and hooks.
+            Here it contributes a shared route that every extending Additive will inherit:
+        </p>
+
+        {{ code(
+            "additives/core/__init__.py", "python",
+            '''from webfluid import Additive
+
+additive = Additive(__name__)
+
+
+@additive.before_enable
+def before_enable(_):
+    from .app import about
+    additive.app.get("/about")(about)'''
+        ) }}
+
+        <h2>Extending a base</h2>
+        <p>
+            A default Additive becomes a child of a base by passing it into the constructor. You don't
+            import the base package directly &mdash; you resolve it through
+            <code>import_base</code>, which finds the installed base by its id:
+        </p>
+
+        {{ code(
+            "additives/portal/__init__.py", "python",
+            '''from webfluid import Additive
+from webfluid.utils.additives import import_base
+
+additive = Additive(
+    __name__,
+    import_base("core")
+)
+
+
+@additive.before_enable
+def before_enable(_):
+    from .app import index
+    additive.app.get("/")(index)'''
+        ) }}
+
+        <h2>What extension actually does</h2>
+        <p>When the child is enabled, the framework folds the base into it:</p>
+        <ul>
+            <li>
+                The base's <code>api</code>, <code>app</code> and <code>ws</code> routers are included
+                into the child, so the <code>/about</code> route above now answers under the
+                <strong>child's</strong> prefix (e.g. <code>/portal/about</code>).
+            </li>
+            <li>
+                The base's templates join the child's namespace, so the child can extend layouts and
+                partials the base ships &mdash; under the child's id.
+            </li>
+            <li>
+                The base's required extensions are merged into the child's requirements.
+            </li>
+            <li>
+                The base inherits the child's url prefix and id, so reverse-url lookups line up.
+            </li>
+        </ul>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            Only the child is switched on in your app config. The base rides along with it. You never
+            put a base id into the [additives] section &mdash; bases are loaded on demand when something
+            extends them.
+        """) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            A given base can be extended by exactly one default Additive at a time. If two of your
+            enabled Additives try to extend the same base, enabling will fail. Bases are foundations for
+            a single feature, not a shared singleton service &mdash; reach for an extension if you need
+            the latter.
+        """) }}
+
+        <h2>Why bother</h2>
+        <p>
+            Base Additives shine for distribution. You can publish a polished foundation &mdash; an
+            admin shell, an auth flow, a billing skeleton &mdash; and let each project extend it with
+            its own routes and frontend without forking. That packaging story is exactly what the next
+            chapter is about.
+        </p>
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/additives/contract">Interaction between</a>.</p>
+    </article>
+{% endblock %}

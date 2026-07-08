@@ -891,6 +891,7 @@
     .oc-profile-owner { @apply flex flex-wrap items-center gap-1.5 text-sm text-slate-400; }
     .oc-profile-desc { @apply text-base leading-relaxed text-slate-300; }
     .oc-profile-action { @apply flex flex-wrap items-center gap-3; }
+    .oc-buy-hint { @apply mt-0 text-xs text-center leading-relaxed text-slate-500; }
     .oc-action-link { @apply inline-flex items-center justify-center text-center; }
     .oc-profile-section { @apply flex flex-col gap-4; }
     .oc-profile-h2 { @apply font-display font-bold text-lg text-slate-100; }

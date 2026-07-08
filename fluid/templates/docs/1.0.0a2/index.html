@@ -1,0 +1,229 @@
+{% extends "docs/base_overview.html" %}
+{% from "docs/partials/_callout.html" import warning %}
+{% from "docs/partials/_overview.html" import feature, fix, bug, break %}
+
+{% block lead %}
+    This is the second public alpha of WebFluid. Alpha 2 keeps the foundations of the first release and
+    grows a lot on top of them: a full security battery, a runtime theming layer, a reworked event and
+    i18n system and the <code>wf ocean</code> client for sharing packages. The runtime and its typing
+    stubs now ship as two separate packages. APIs are still settling before the stable release, so keep
+    pinning your version while the alpha runs.
+{% endblock %}
+
+{% block features %}
+    <div class="doc-list">
+        {{ feature(
+            "Security battery",
+            """
+                A complete auth stack: users, roles and permissions, two-factor auth via TOTP and
+                WebAuthn, argon2 password hashing, double-submit CSRF protection and OAuth clients.
+                It ships ready made FastAPI dependencies like <code>require_user</code>,
+                <code>require_admin</code> and <code>require_permissions</code>.
+            """
+        ) }}
+
+        {{ feature(
+            "Ocean package client",
+            """
+                The new <code>wf ocean</code> command group logs you in, searches the Ocean hub and
+                installs or publishes Additives and extensions. Required Additives are pulled in
+                automatically when you install a package.
+            """
+        ) }}
+
+        {{ feature(
+            "Runtime theming",
+            """
+                With <code>WF_THEMES</code> enabled, Fluid manages a stylesheet theme per session.
+                Register additional themes through <code>fluid.add_theme()</code> and switch them
+                with <code>fluid.set_theme()</code>.
+            """
+        ) }}
+
+        {{ feature(
+            "Reworked event system",
+            """
+                Signals, events and request/response queries now share a single <code>/ws/events</code>
+                socket. The bundled frontend EventManager can request a query result, not just
+                subscribe to broadcasts.
+            """
+        ) }}
+
+        {{ feature(
+            "Domain based i18n",
+            """
+                Translations are organised into domains with JSON message sources, locale and timezone
+                selectors, a <code>force()</code> context manager and a <code>/ws/i18n</code> socket for
+                translating in the browser.
+            """
+        ) }}
+
+        {{ feature(
+            "File backed config values",
+            """
+                Any <code>*_FILE</code> key in an app config is resolved from the file it points to,
+                which keeps Docker style secrets out of your environment. A <code>[dev]</code> section
+                is applied only when you run in debug mode.
+            """
+        ) }}
+
+        {{ feature(
+            "Split runtime and typing stubs",
+            """
+                The <code>webfluid</code> package now ships the pure runtime. Type information lives in
+                a separate <code>webfluid-stubs</code> package that you pull in with
+                <code>webfluid[typing]</code>.
+            """
+        ) }}
+
+        {{ feature(
+            "Async-first runtime with sync counterparts",
+            """
+                Every battery still exposes an async API and a matching synchronous one. The SQLAlchemy
+                extension, for example, gives you both <code>executor()</code> and
+                <code>async_executor()</code> over the same bind set.
+            """
+        ) }}
+    </div>
+{% endblock %}
+
+{% block fixes %}
+    <div class="doc-list">
+        {{ fix(
+            "Interactive runtime on Windows",
+            """
+                <code>wf run [app] --interactive</code> now drives its child process through a dedicated
+                process group and works on NT based systems.
+            """
+        ) }}
+
+        {{ fix(
+            "Version representation",
+            """
+                Pre-release stages and builds (like <code>1.0.0a2</code>) are parsed and compared
+                correctly now, so Additive manifest version checks no longer fail on startup.
+            """
+        ) }}
+
+        {{ fix(
+            "Optional static folder",
+            """
+                Fluid only mounts its app static directory when it actually exists. A project without a
+                <code>fluid/static</code> folder no longer breaks on initialization.
+            """
+        ) }}
+
+        {{ fix(
+            "Passthrough CLI output",
+            """
+                The <code>wf node</code> and <code>wf tailwind</code> passthrough commands now print the
+                output of the underlying tools instead of succeeding silently.
+            """
+        ) }}
+
+        {{ fix(
+            "Frontend query results",
+            """
+                The bundled frontend EventManager can request a query result through the new
+                query/request system, closing the gap from the first alpha.
+            """
+        ) }}
+    </div>
+{% endblock %}
+
+{% block bugs %}
+    <div class="doc-list">
+        {{ bug(
+            "Tailwind without themes",
+            """
+                When <code>WF_THEMES</code> is disabled and a surface only ships a <code>tailwind_no_themes.css</code>,
+                the frontend loader still probes for <code>tailwind_raw.css</code> and drops the stylesheet link.
+                Keep a <code>tailwind_raw.css</code> around, or leave themes enabled, until this is fixed.
+            """
+        ) }}
+
+        {{ bug(
+            "Migrations collect every Additive",
+            """
+                The generated Alembic <code>env.py</code> imports the models of every Additive under
+                <code>additives/</code>, without skipping the ones disabled for the app being migrated. So
+                autogenerated revisions contain foreign Additives' tables. Review your revisions before applying them.
+            """
+        ) }}
+
+        {{ bug(
+            "Secrets in migrations",
+            """
+                Unlike <code>wf run</code>, the migration environment does not resolve <code>*_FILE</code>
+                config values. File backed secrets are passed through verbatim, so a migration may not see
+                the real value behind them.
+            """
+        ) }}
+
+        {{ bug(
+            "Migrate template selection",
+            """
+                <code>wf migrate init</code> chooses the single- or multi-database template from
+                <code>SQLALCHEMY_BINDS</code> in your config. Binds attached at runtime through
+                <code>Model.set_bind</code> are not detected and need a manual template.
+            """
+        ) }}
+
+        {{ bug(
+            "Event backpressure",
+            """
+                Broadcasts use a bounded per-listener buffer sized by <code>EVENTS_EVENT_QUEUE_SIZE</code>.
+                A consumer that falls behind silently loses the oldest events.
+            """
+        ) }}
+
+        {{ bug(
+            "Server-side theme switching",
+            """
+                <code>fluid.set_theme()</code> validates the name like <code>add_theme()</code> does and
+                rejects a name that is already registered, so it cannot currently select one of your
+                registered themes. The client-side light/dark helper (<code>window.wf.switchTheme()</code>)
+                is unaffected.
+            """
+        ) }}
+    </div>
+{% endblock %}
+
+{% block breaks %}
+    <div class="doc-list">
+        {{ break(
+            "Additives moved into the core",
+            """
+                The old <code>webfluid.additives</code> package is gone. The Additive base is now imported
+                straight from <code>webfluid</code> (<code>from webfluid import Additive</code>) and its
+                helpers live in <code>webfluid.utils.additives</code>.
+            """
+        ) }}
+
+        {{ break(
+            "Reworked i18n storage",
+            """
+                The translation layer was rebuilt around domains and JSON message sources. Translation
+                setups from the first alpha have to be recreated against the new structure. See the
+                Babel chapter for the current shape.
+            """
+        ) }}
+
+        {{ break(
+            "Separate typing package",
+            """
+                Type stubs are no longer bundled with the runtime. Install <code>webfluid[typing]</code>
+                (or <code>webfluid-stubs</code> directly) to get editor and type-checker support.
+            """
+        ) }}
+
+        {{ break(
+            "New EXT_SECURITY switch",
+            """
+                The security battery is a new extension gated by <code>EXT_SECURITY</code>. Enabling it
+                requires a <code>SECURITY_SECRET</code> in production, so add both to your app config when
+                you adopt it.
+            """
+        ) }}
+    </div>
+{% endblock %}

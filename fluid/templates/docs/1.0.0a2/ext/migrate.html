@@ -1,0 +1,267 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import warning, info %}
+
+{% block title %}Migrate — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Extensions</span>
+        <h1 class="doc-h1">Migrate</h1>
+        <p class="doc-lead">
+            Alright, now that we are familiar with SQLAlchemy, the logical next step is
+            keeping your database up to date. And that's the point where we should talk about
+            migrating your database. Of course, we do already provide an extension for that
+            as well.
+        </p>
+
+        <h2>Working with Migrate</h2>
+        <p>
+            Migrate is a CLI-only extension for WebFluid that provides single- and multi-db
+            <a href="https://alembic.sqlalchemy.org/en/latest/">Alembic</a> templates, enrolls
+            the matching one based on your app configuration and manages your migrations for
+            each of your projects' apps. In general, it is a wrapper for alembic commands with
+            improved compatibility for WebFluid.
+            <br><br>
+            Anyway, since your main.py file is not executed when working with Migrate, it is
+            time to outsource our config class into the apps' <code>config.py</code> file.
+            Migrate uses the frameworks' magic we talked about in
+            <a href="/v/{{ version }}/config/config-class">Config classes</a> to parse the config
+            and evaluate which template to use when it gets initialized:
+        </p>
+
+        {{ code(
+            "fluid/config.py", "python",
+            '''from webfluid.core.config import register_config
+import os
+
+
+@register_config(10)
+class MyConfig:
+    SESSION_COOKIE_SECURE = True
+
+    MYEXT_BAR = "crazy"
+
+    # To test both templates we will create a second app later on
+    # and uncomment the SQLALCHEMY_BINDS only for the second one:
+    # SQLALCHEMY_BINDS = {
+    #     "test": os.getenv("TEST_DB_URI", "sqlite:///test.db")
+    # }
+
+
+# You do not need to import this file manually, the framework
+# initializes it automatically if it exists.'''
+        ) }}
+
+        <h3>Preparing for migration</h3>
+        <p>Okay, let's update your models so we've got something to migrate:</p>
+
+        {{ code(
+            "fluid/models.py", "python",
+            '''from webfluid.core.ext import db
+from sqlalchemy import func
+from sqlalchemy.orm import Mapped, mapped_column
+from datetime import datetime
+
+
+class MyModel(db.Model):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    value: Mapped[str]
+    created_at: Mapped[datetime] = mapped_column(
+        server_default=func.now()
+    )
+
+    def __init__(self, value: str):
+        self.value = value
+
+
+class SecondModel(db.Model):
+    __bind_key__ = "test"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    value: Mapped[str]
+    created_at: Mapped[datetime] = mapped_column(
+        server_default=func.now()
+    )
+
+    def __init__(self, value: str):
+        self.value = value'''
+        ) }}
+
+        <p>
+            And integrate the update into your app. It is important to switch to
+            the app factory setup, because Migrate assumes you are working with
+            an app factory in your <code>main.py</code> file:
+        </p>
+
+        {{ code(
+            "main.py", "python",
+            '''from webfluid import Fluid
+from webfluid.core.ext import scheduler, db
+from fastapi import Request
+from fastapi.responses import HTMLResponse
+from fastapi.exceptions import HTTPException
+from apscheduler.triggers.interval import IntervalTrigger
+from sqlalchemy import select
+
+from extension.main import MyExtension
+from fluid.jobs import heart
+from fluid.models import MyModel
+
+my_ext = MyExtension()
+scheduler.add_job(heart, IntervalTrigger(seconds=5))
+
+
+async def home():
+    return await fluid.render(
+        "index.html",
+        title="Hello World!",
+        name="my friend"
+    )
+
+
+async def health():
+    return {"status": "ok"}
+
+
+async def get_model(request: Request):
+    model_id = request.query_params.get("id")
+    if not model_id:
+        raise HTTPException(status_code=400, detail="Bad Request")
+
+    async with db.async_executor(model=MyModel) as e:
+        results = await e.exec(
+            select(MyModel).where(MyModel.id == model_id)
+        )
+        result = results.first()
+        if not result:
+            raise HTTPException(status_code=404, detail="Model not found")
+
+        timestamp = result.created_at
+        return {
+            "model_id": model_id,
+            "value": result.value,
+            "created_at": timestamp.isoformat() if timestamp else None
+        }
+
+
+async def add_model(request: Request):
+    data = await request.json()
+    value = data.get("value")
+    if not value:
+        raise HTTPException(status_code=400, detail="Bad Request")
+
+    async with db.async_executor(model=MyModel) as e:
+        model = await e.insert(
+            MyModel(value),
+            flush=True
+        )
+        return {
+            "model_id": model.id,
+            "value": model.value,
+            "created_at": model.created_at.isoformat()
+        }
+
+
+def create_app() -> Fluid:
+    app = Fluid(__name__)
+
+    app.get("/", response_class=HTMLResponse)(home)
+    app.get("/health")(health)
+    app.get("/my-model")(get_model)
+    app.post("/my-model")(add_model)
+
+    my_ext.expand_fluid(app)
+
+    return app
+
+
+if __name__ == "__main__":
+    fluid = create_app()
+    fluid.mix()'''
+        ) }}
+
+        <h3>Single-DB</h3>
+        <p>
+            Now everything is set in place, and we can start migrating your databases using the
+            Migrate CLI. This is done in three commands:
+        </p>
+
+        {{ code(
+            "terminal", "bash",
+            """# Initialize Migrate to pick the correct alembic template
+wf migrate init app
+
+# The generated env.py scans the additives directory,
+# so make sure it exists (wf create project makes it for you)
+mkdir additives
+
+# Perform revision with autogenerate
+wf migrate revision app -a
+
+# Upgrade your database
+wf migrate upgrade app
+
+# And test it (do not forget to set
+# EXT_SQLALCHEMY = 1 in your app.ini before):
+wf run app"""
+        ) }}
+
+        <h3>Multi-DB</h3>
+        <p>Alright, now let's test the same thing with multiple binds:</p>
+
+        {{ code(
+            "terminal", "bash",
+            """# Copy your app config:
+cp app_configs/app.ini app_configs/app2.ini
+
+# Now set your DATABASE_URI to sqlite:///app2.db
+# and optionally add a TEST_DB_URI if you want.
+# Then uncomment the SQLALCHEMY_BINDS in your config.
+
+# The procedure is exactly the same:
+wf migrate init app2
+wf migrate revision app2 -a
+wf migrate upgrade app2
+
+wf run app2"""
+        ) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        <p>
+            <code>wf migrate init</code> looks at your config to decide which template to enroll: it uses
+            the multi-db template as soon as your config defines <code>SQLALCHEMY_BINDS</code>, and the
+            single-db template otherwise. Keep the following current limitations in mind while working
+            with Migrate:
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            Autogenerated revisions collect the models of every Additive under your <code>additives</code>
+            directory, without skipping the ones that are disabled for the app you are migrating. Review
+            your revisions before applying them, so you do not migrate a foreign Additive's tables into
+            your app.
+        """) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            The migration environment does not resolve <code>*_FILE</code> config values the way
+            <code>wf run</code> does. If your secrets are file backed, point Migrate at a config that
+            carries the real values, otherwise it may not connect with the correct credentials.
+        """) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            Migrate decides between the single- and multi-db template from the <code>SQLALCHEMY_BINDS</code>
+            in your config. Binds you attach at runtime through <code>Model.set_bind</code> are not visible
+            at init time, so add them to your config before running <code>wf migrate init</code>.
+        """) }}
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/ext/mailman">Mail</a>.</p>
+    </article>
+{% endblock %}

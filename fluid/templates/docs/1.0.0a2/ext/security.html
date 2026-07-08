@@ -1,0 +1,277 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import info, warning %}
+
+{% block title %}Security — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Extensions</span>
+        <h1 class="doc-h1">Security</h1>
+        <p class="doc-lead">
+            Our app can talk to its users now &mdash; but before it can have users at all, it needs to
+            know who they are. The Security battery is WebFluid's answer to that: a user store with roles
+            and permissions, argon2 password hashing, CSRF protection, two-factor auth and OAuth logins,
+            all wrapped in ready-made FastAPI dependencies.
+        </p>
+
+        <h2>Enabling security</h2>
+        <p>
+            The battery keeps its users, roles and tokens in the database, so it builds on the SQLAlchemy
+            extension &mdash; both switches have to be on. It also signs its CSRF and one-time tokens with
+            a dedicated secret. In production a missing <code>SECURITY_SECRET</code> is a hard error; in
+            debug mode it falls back to a fixed development secret and warns you about it.
+        </p>
+
+        {{ code(
+            "app_configs/app.ini", "ini",
+            """[general]
+SECRET_KEY = supersecret
+
+[data]
+DATABASE_URI = sqlite:///app.db
+
+[extensions]
+EXT_SQLALCHEMY = 1
+EXT_SECURITY = 1
+
+[security]
+SECURITY_SECRET = another-long-secret"""
+        ) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            Security brings a whole set of db models (users, roles, permissions, plus the 2FA and OAuth
+            identity tables). Just like with Babel, this is the moment to run the migration flow again
+            (wf migrate revision app -a and wf migrate upgrade app) so the tables actually exist.
+        """) }}
+
+        <h2>The services</h2>
+        <p>
+            Everything is reached through the shared registry in <code>webfluid.core.ext</code>. The
+            <code>security</code> instance exposes four services:
+        </p>
+        <ul>
+            <li><code>security.user_service</code> &mdash; the current user and every route guard.</li>
+            <li><code>security.hash_service</code> &mdash; argon2 password hashing.</li>
+            <li><code>security.token_service</code> &mdash; CSRF and signed one-time tokens.</li>
+            <li><code>security.oauth_service</code> &mdash; social logins through authlib.</li>
+        </ul>
+
+        <h2>Registering and authenticating users</h2>
+        <p>
+            There is no one-size-fits-all signup endpoint &mdash; you own that flow. The battery gives you
+            the pieces: the <code>User</code> model, the hasher and a pair of validators. The validators are
+            built to plug into Pydantic, so the natural home for them is a schema &mdash; and that earns our
+            project its <code>fluid/schemas</code> package, sitting right next to the <code>models</code>
+            and <code>services</code> we've already grown:
+        </p>
+
+        {{ code(
+            "fluid/schemas/accounts.py", "python",
+            '''from pydantic import BaseModel, EmailStr, field_validator
+
+from webfluid.extensions.security.utils import (
+    validate_username, validate_password
+)
+
+
+class CreateUser(BaseModel):
+    username: str
+    email: EmailStr
+    password: str
+
+    # validate_username / validate_password raise on bad input, so they
+    # drop straight in as field validators (validate_password even
+    # attaches an .errors list with the individual reasons).
+    _validate_username = field_validator("username")(validate_username)
+    _validate_password = field_validator("password")(validate_password)'''
+        ) }}
+
+        <p>
+            With the input validated, a small service turns the schema into a stored user, hashing the
+            password on the way in:
+        </p>
+
+        {{ code(
+            "fluid/services/accounts.py", "python",
+            '''from webfluid.core.ext import db, security
+from webfluid.extensions.security.models import User
+from sqlalchemy import select
+
+from fluid.schemas.accounts import CreateUser
+
+
+async def register(data: CreateUser) -> User:
+    async with db.async_executor(model=User) as e:
+        user = User(
+            data.username, data.email,
+            security.hash_service.hash(data.password)
+        )
+        await e.insert(user, flush=True)
+        return user
+
+
+async def authenticate(username: str, password: str) -> User | None:
+    async with db.async_executor(model=User) as e:
+        result = await e.exec(select(User).where(User.username == username))
+        user = result.first()
+
+    if not user or not user.psw_hash:
+        return None
+    if not security.hash_service.verify(user.psw_hash, password):
+        return None
+    return user'''
+        ) }}
+
+        <h2>Logging in and out</h2>
+        <p>
+            The current user is derived from <code>request.session["user_id"]</code>, so logging in is
+            simply storing that id and logging out is dropping it. The session cookie is already signed by
+            the framework, so there is nothing else to wire up. These are JSON endpoints, so they join the
+            <code>api_router</code> in <code>fluid/api</code> next to the routes from the
+            <a href="/v/{{ version }}/ext/mailman">Mail</a> chapter:
+        </p>
+
+        {{ code(
+            "fluid/api/accounts.py", "python",
+            '''from fastapi import Request
+from fastapi.exceptions import HTTPException
+
+from fluid.services.accounts import authenticate
+
+
+async def login(request: Request):
+    data = await request.json()
+    user = await authenticate(data["username"], data["password"])
+    if not user:
+        raise HTTPException(status_code=401, detail="INVALID_CREDENTIALS")
+
+    request.session["user_id"] = user.id
+    return {"id": user.id, "username": user.username}
+
+
+async def logout(request: Request):
+    request.session.pop("user_id", None)
+    return {"status": "ok"}'''
+        ) }}
+
+        <h2>Knowing the current user</h2>
+        <p>
+            The user service hands you FastAPI dependencies. The plain <code>current_user</code> yields
+            the logged-in <code>User</code> or <code>None</code>; <code>require_user</code> enforces a
+            session (and validates CSRF on unsafe methods) and raises <code>401</code> otherwise:
+        </p>
+
+        {{ code(
+            "fluid/api/accounts.py", "python",
+            '''from webfluid.core.ext import security
+from webfluid.extensions.security.models import User
+
+
+async def me(user: User = security.user_service.require_user):
+    return {"id": user.id, "username": user.username}
+
+
+async def maybe(user: User | None = security.user_service.current_user):
+    return {"authenticated": user is not None}'''
+        ) }}
+
+        <h2>Roles and permissions</h2>
+        <p>
+            Users carry <code>Role</code>s, roles carry <code>Permission</code>s and an
+            <code>is_admin</code> flag. The user service turns all of that into dependencies you drop
+            straight into your routes:
+        </p>
+
+        {{ code(
+            "example", "python",
+            '''from webfluid.core.ext import security
+
+svc = security.user_service
+
+# Attributes (no call): a fixed guard.
+async def dashboard(user = svc.require_admin): ...
+
+# Methods (called): parametrised guards.
+async def write_posts(user = svc.require_permissions(["posts:write"])): ...
+async def staff_area(user = svc.require_any_role(["editor", "moderator"])): ...'''
+        ) }}
+
+        <p>
+            The full set is <code>require_user</code>, <code>require_2fa</code>,
+            <code>require_admin</code>, <code>require_roles</code> / <code>require_any_role</code> and
+            <code>require_permissions</code> / <code>require_any_permission</code>. The
+            <code>_any_</code> variants pass if the user matches at least one entry; the others require
+            all of them.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            The guards build on each other: require_2fa implies require_user, and require_admin as well as
+            the role and permission guards all imply require_2fa. So a permission check also enforces
+            authentication and, when the user has a second factor configured, that it has been verified in
+            this session (request.session['2fa_verified']).
+        """) }}
+
+        <h2>CSRF protection</h2>
+        <p>
+            The token service ships a double-submit CSRF guard. <code>require_user</code> already runs it
+            on unsafe methods, but you can also apply it on its own. Hand the browser a token with
+            <code>csrf_response</code> (it sets the cookie and the session token) and echo it back in the
+            <code>X-CSRF-Token</code> header on your next request:
+        </p>
+
+        {{ code(
+            "example", "python",
+            '''from fastapi import Request
+
+from webfluid.core.ext import security
+
+
+# GET this once to receive the csrf cookie + session token.
+async def csrf(request: Request):
+    return security.token_service.csrf_response(request)
+
+
+# Protect a standalone route (require_user does this for you already).
+async def submit(request: Request, _=security.token_service.csrf_protect):
+    ...'''
+        ) }}
+
+        <h2>Two-factor, backup codes and OAuth</h2>
+        <p>
+            The models also cover the harder parts of auth: <code>TOTPSecret</code> for authenticator
+            apps, <code>WebAuthnCredential</code> for passkeys and <code>BackupCode</code> for one-time
+            recovery codes. <code>UserService.has_2fa(user)</code> tells you whether a user has any second
+            factor at all. Social logins run through <code>security.oauth_service</code>, which wraps
+            authlib, is configured with <code>SECURITY_OAUTH_CLIENTS</code> and links each external login
+            to a user through the <code>Identity</code> model.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            These are building blocks, not a turnkey flow in this alpha. The battery gives you the models,
+            the hasher, the guards and the OAuth plumbing, but the actual enrollment and verification
+            routes are yours to write. If EXT_JWT is enabled, the guards can additionally accept a bearer
+            token through requirement_or_grant / requirement_and_grant for machine-to-machine access.
+        """) }}
+
+        <h2>The config values</h2>
+        <ul>
+            <li><code>SECURITY_SECRET</code> &mdash; signs CSRF and one-time tokens. Required in production.</li>
+            <li><code>SECURITY_TOKEN_MAX_AGE</code> &mdash; lifetime of signed tokens in seconds. Default <strong>3600</strong>.</li>
+            <li><code>SECURITY_CSRF_COOKIE_NAME</code> / <code>SECURITY_CSRF_COOKIE_SECURE</code> &mdash; the CSRF cookie. Defaults <strong>csrf_token</strong> / <strong>True</strong>.</li>
+            <li><code>SECURITY_HASHER_TIME_COST</code> / <code>_MEMORY_COST</code> / <code>_PARALLELISM</code> &mdash; argon2 tuning. Defaults <strong>3</strong> / <strong>65536</strong> / <strong>4</strong>.</li>
+            <li><code>SECURITY_PASSWORD_MIN_LENGTH</code> / <code>SECURITY_PASSWORD_REQUIREMENTS</code> &mdash; the policy the validators enforce. Defaults <strong>8</strong> and one each of lower, upper, digits and special.</li>
+            <li><code>SECURITY_OAUTH_CLIENTS</code> &mdash; a mapping of provider name to authlib client settings.</li>
+            <li><code>SECURITY_MODELS_DB_BIND</code> &mdash; put the security tables on a non-default bind.</li>
+        </ul>
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/ext/events">Events</a>.</p>
+    </article>
+{% endblock %}

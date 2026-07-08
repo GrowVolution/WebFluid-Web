@@ -1,0 +1,138 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import info, warning %}
+
+{% block title %}App Configs — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Configuration</span>
+        <h1 class="doc-h1">App Configs</h1>
+        <p class="doc-lead">
+            In the previous chapter we built our first and simple app. And we had to
+            create an <code>app.ini</code> file to run it. So we can say that app configs
+            play a central role in spinning up your apps and developing WebFluid projects.
+        </p>
+
+        <h2>The core concept</h2>
+        <p>
+            App configs are the CLI's entry point into your project. They replace <code>.env</code> files and
+            tell the framework which app to run.
+            <br><br>
+            Primarily it is used to store secrets, potentially risky information (like database uris) and switches.
+            Switches are another core concept of WebFluid. The framework uses them to enroll features and extensions
+            on startup. Or in other words: They make the framework magic optioned.
+        </p>
+
+        <h2>Sections</h2>
+        <p>
+            App configs are parsed using Pythons <a href="https://docs.python.org/3/library/configparser.html">configparser</a>.
+            Primarily, we are using sections to logically separate parts of your apps' configuration. A fully qualified
+            example would look like this:
+        </p>
+
+        {{ code(
+            "app_configs/[app].ini", "ini",
+            """[general]
+SECRET_KEY = supersecret
+
+[data]
+DATABASE_URI = sqlite:///test.db
+REDIS_URI = redis://localhost:6379
+
+[extensions]
+EXT_SCHEDULING = 0
+EXT_SQLALCHEMY = 1
+EXT_BABEL = 1
+EXT_SECURITY = 0
+EXT_EVENTS = 1
+EXT_CACHE = 0
+EXT_MAIL = 1
+EXT_JWT = 0
+
+[features]
+WF_THEMES = 1
+WF_TAILWIND = 1
+WF_PROCESSING = 1
+WF_ADDITIVES = 1
+
+[security]
+SECURITY_SECRET = another-secret
+
+[additives]
+my_additive = 1
+
+[mail]
+MAIL_USERNAME = noreply@example.org
+MAIL_PASSWORD = supersecret"""
+        ) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info('''
+            We used "general" for our logical defaults, but
+            since it is just logical separation, you are not forced to stick with our defaults. This, of course, applies to
+            all the sections shown above.
+        ''') }}
+
+        <p>
+            The <code>[extensions]</code> and <code>[features]</code> switches are the ones the framework
+            reads on startup to enroll its magic. Everything else is just plain configuration that ends up
+            in your apps' environment. The <code>[additives]</code> section toggles the Additives that are
+            installed in your project (more on that in the Additives chapters), and <code>[security]</code>
+            carries the <code>SECURITY_SECRET</code> that the security battery requires once you enable
+            <code>EXT_SECURITY</code>.
+        </p>
+
+        <h2>Secrets from files</h2>
+        <p>
+            Storing raw secrets inside a config file is fine for development, but in production you usually
+            mount them as files (think Docker or Kubernetes secrets). For every config key you can append a
+            <code>_FILE</code> suffix and point it at a file instead. The CLI reads the file and exposes its
+            content under the key without the suffix.
+        </p>
+
+        {{ code(
+            "app_configs/[app].ini", "ini",
+            """[general]
+SECRET_KEY_FILE = /run/secrets/secret_key
+
+[security]
+SECURITY_SECRET_FILE = /run/secrets/security_secret"""
+        ) }}
+
+        <p>
+            In this example your app sees <code>SECRET_KEY</code> and <code>SECURITY_SECRET</code> with the
+            contents of the referenced files. If the file does not exist, the raw value (the path) is kept as
+            a fallback.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            File backed values are only resolved by <code>wf run</code>. The migration environment
+            (<code>wf migrate</code>) currently passes <code>*_FILE</code> keys through verbatim, so a
+            migration may not see the real secret behind them.
+        """) }}
+
+        <h2>The dev section</h2>
+        <p>
+            One section name is special: <code>[dev]</code>. Its values are only applied when you run your app
+            in debug mode (the <code>-d</code> / <code>--debug</code> flag). This lets you keep development only
+            overrides next to your production configuration without leaking them into a normal run.
+        </p>
+
+        {{ code(
+            "app_configs/[app].ini", "ini",
+            """[general]
+SECRET_KEY = supersecret
+
+[dev]
+DATABASE_URI = sqlite:///dev.db"""
+        ) }}
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/config/config-class">Config Classes</a>.</p>
+
+    </article>
+{% endblock %}

@@ -1,0 +1,271 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import info, warning %}
+
+{% block title %}Additive Interaction — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Additives</span>
+        <h1 class="doc-h1">Interaction between</h1>
+        <p class="doc-lead">
+            An Additive is isolated, but never alone. It runs inside your app, shares its runtime, talks
+            to its neighbours through events and queries &mdash; never through imports &mdash; can depend
+            on other Additives, contributes its own frontend to the build and, because it carries a
+            manifest, can be packaged and handed to someone else. This chapter is about those seams.
+        </p>
+
+        <h2>One shared runtime</h2>
+        <p>
+            Additives reach the same batteries your main app does. The shared registry in
+            <code>webfluid.core.ext</code> is the same object everywhere, so an Additive talks to the
+            very same database, cache and event manager &mdash; no wiring required:
+        </p>
+
+        {{ code(
+            "additives/portal/app/index.py", "python",
+            '''from webfluid.core.ext import db, events
+from sqlalchemy import select, func
+
+from fluid.models import MyModel
+
+
+async def handle_request():
+    from .. import additive
+
+    async with db.async_executor(model=MyModel) as e:
+        result = await e.exec(select(func.count(MyModel.id)), scalars=False)
+        total = result.scalar()
+
+    return await additive.render("index.html", total=total)'''
+        ) }}
+
+        <h2>Talking without imports</h2>
+        <p>
+            Reaching into <code>fluid.models</code> like that is fine for the main app's own models, but
+            it is exactly the kind of hard dependency that turns "modules" back into a monolith. The
+            moment one Additive <code>import</code>s another, they're welded together &mdash; you can't
+            ship one without the other, and disabling one breaks its neighbour.
+            <br><br>
+            So Additives talk over the <strong>EventManager</strong> instead. Events and queries are the
+            loose-coupling contract: a producer publishes under a name, and anyone interested reacts to
+            that name &mdash; with no shared Python symbol between them. The only thing that crosses the
+            boundary is a string.
+        </p>
+
+        <h3>Scoping contracts by id</h3>
+        <p>
+            For that to be safe, those names must not collide. This is what
+            <code>additive.unique_name()</code> is for: it prefixes a name with the Additive's id, giving
+            every contract a stable, predictable address. An Additive <em>serves</em> its contracts under
+            its own id namespace:
+        </p>
+
+        {{ code(
+            "additives/portal/events/contracts.py", "python",
+            '''from webfluid.core.ext import db, events
+from sqlalchemy import select, func
+
+from .. import additive
+from fluid.models import MyModel
+
+
+# A query other modules may call by name. unique_name("model_count")
+# scopes it to our id, so it is served as "portal_model_count".
+@events.query(additive.unique_name("model_count"))
+async def model_count(_):
+    async with db.async_executor(model=MyModel) as e:
+        result = await e.exec(select(func.count(MyModel.id)), scalars=False)
+        return result.scalar()
+
+
+# A public broadcast, likewise scoped: "portal_model:created".
+events.create_signal(additive.unique_name("model:created"), internal=False)'''
+        ) }}
+
+        <p>
+            We register these from <code>before_enable</code>, right next to the routes, so the contracts
+            exist as soon as the Additive is enabled:
+        </p>
+
+        {{ code(
+            "additives/portal/__init__.py", "python",
+            '''@additive.before_enable
+def before_enable(_):
+    from .app import index
+    additive.app.get("/")(index)
+
+    from .events import contracts  # noqa: registers the contracts above'''
+        ) }}
+
+        <h3>Consuming by name</h3>
+        <p>
+            On the other side, a second Additive reacts to those contracts without importing
+            <code>portal</code> at all. It knows <code>portal</code> only by its id &mdash; the same id it
+            already declares as a dependency in its manifest &mdash; and addresses the contract by that
+            id-scoped name:
+        </p>
+
+        {{ code(
+            "additives/dashboard/events/listeners.py", "python",
+            '''from webfluid.core.ext import events
+
+# The id we depend on (declared under requires.additives in our manifest).
+PORTAL = "portal"
+
+
+async def overview():
+    # Ask portal for its model count without importing a line of it:
+    return await events.request(f"{PORTAL}_model_count")
+
+
+# React to portal broadcasts, again only by name:
+@events.event(f"{PORTAL}_model:created", internal=False)
+async def on_created(data):
+    from webfluid.utils.logging import factory as log
+    log.log(f"[dashboard] portal created a model: {data}")'''
+        ) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            The id is the public contract. Because the consumer depends on portal by id and version in
+            its manifest, the framework guarantees portal is present before either is enabled &mdash; so
+            the string address is safe, and no Python import ever crosses the boundary. The same
+            id-scoping powers url_for inside Additive templates: route names are run through unique_name
+            too, so an Additive's reverse-url lookups never clash with anyone else's.
+        """) }}
+
+        <h2>A local request lifecycle</h2>
+        <p>
+            Just like the main app, an Additive can hook its own request flow &mdash; but scoped to its
+            own routes only. It offers <code>before_request</code>, <code>after_request</code>,
+            <code>context_processor</code> and a route-level <code>http_middleware</code>. Use them to
+            give an Additive its own guards or template defaults without touching the rest of the app:
+        </p>
+
+        {{ code(
+            "additives/portal/__init__.py", "python",
+            '''from webfluid import Additive
+from webfluid.utils.additives import import_base
+
+additive = Additive(
+    __name__,
+    import_base("core"),
+    required_extensions=["sqlalchemy", "events"]
+)
+
+
+@additive.context_processor
+def defaults():
+    return {"section": "portal"}
+
+
+@additive.before_enable
+def before_enable(_):
+    from .app import index
+    additive.app.get("/")(index)'''
+        ) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            required_extensions is the Additive's own safety net: if one of the named extensions isn't
+            enabled in the app it is loaded into, enabling fails loudly instead of breaking at runtime.
+            A base's requirements are merged into the child automatically.
+        """) }}
+
+        <h2>Declaring requirements</h2>
+        <p>
+            The manifest's optional <code>requires</code> block is how an Additive states what it needs
+            from the world around it: a framework version range, other Additives (by id, optionally
+            pinned), and pip packages to install. These are checked when the Additive is enabled:
+        </p>
+
+        {{ code(
+            "additives/portal/manifest.json", "json",
+            '''{
+  "id": "portal",
+  "version": "1.0.0",
+  "type": "default",
+  "frontend": { "type": "vite", "framework": "vue", "typescript": false },
+  "name": "Portal",
+  "requires": {
+    "wf": ">=1.0.0",
+    "additives": { "core": ">=1.0.0" },
+    "packages": ["httpx"]
+  }
+}'''
+        ) }}
+
+        <h2>Frontends that compose</h2>
+        <p>
+            Remember how we kept the workspace list tiny in the Frontend chapter? This is where it pays
+            off. Each Additive can carry its own Vite app in <code>additives/&lt;id&gt;/frontend</code>,
+            and the framework's orchestrator already globs every one of them into the build alongside
+            the main app:
+        </p>
+
+        {{ code(
+            "package.json", "json",
+            '''{
+  "name": "myapp",
+  "private": true,
+  "workspaces": [
+    "additives/*/frontend",
+    "fluid/frontend"
+  ],
+  "devDependencies": {
+    "vite": "^8.0.0"
+  }
+}'''
+        ) }}
+
+        <p>
+            Every Additive frontend is served under its own prefix &mdash;
+            <code>/portal/frontend</code> for the build, proxied through <code>/vite-dev</code> in debug
+            &mdash; and they all share one dev server with hot module replacement running across the lot.
+            The per-Additive <code>vite.config.js</code> only differs from the main app's in its base
+            path, which points at the Additive's prefix instead of the root. Static files behave the
+            same way, mounting under <code>/&lt;id&gt;/static</code>.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            HMR across several frontends works, but more or less cleanly in this first alpha. If a
+            reload gets confused, restarting the dev run sorts it out. It is good enough to develop
+            against; just don't be surprised by the occasional hiccup.
+        """) }}
+
+        <h2>Packaging and distribution</h2>
+        <p>
+            Because an Additive is fully described by its manifest, it can be shipped. Two methods make
+            an installed Additive a good citizen of whatever project pulls it in:
+        </p>
+        <ul>
+            <li>
+                <code>install()</code> &mdash; copies anything in the Additive's <code>extract</code>
+                folder (templates and static the host app should own) into the main app, and installs
+                the manifest's required packages. Existing files are never overwritten.
+            </li>
+            <li>
+                <code>configure()</code> &mdash; lets an Additive contribute its own questions to
+                <code>wf create app</code> through a <code>setup</code> mapping in its
+                <code>config.py</code>, so its settings land in the right app config section
+                interactively.
+            </li>
+        </ul>
+
+        <p>
+            Together with the version requirements, that is what makes Additives distributable through
+            the <strong>Ocean</strong> hub: <code>wf ocean publish</code> uploads an Additive, and
+            <code>wf ocean install</code> pulls it &mdash; along with the Additives it depends on by id and
+            version &mdash; into any WebFluid project. The <a href="/v/{{ version }}/cli/ocean">Ocean</a>
+            chapter walks through the whole flow.
+        </p>
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with the <a href="/v/{{ version }}/utils/lifecycle">Framework utility</a>.</p>
+    </article>
+{% endblock %}

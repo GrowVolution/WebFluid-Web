@@ -27,11 +27,10 @@
 
         {{ code(
             "terminal", "bash",
-            """pip install webfluid==1.0.0a1
+            """pip install webfluid==1.0.0a2
 
 mkdir -p myapp/fluid/templates
 cd myapp
-mkdir fluid/static
 mkdir app_configs"""
         ) }}
 
@@ -162,21 +161,18 @@ EOF"""
                 "terminal", "bash",
                 """user@host:~/myapp$ wf run app
 Starting application...
-[WF]    [2026-05-28 18:04:29 +0200] [INFO]      Mixing your WebFluid application.
-[WF]    [2026-05-28 18:04:29 +0200] [WARNING]   Session cookies are not secure. Consider setting SESSION_COOKIE_SECURE=True.
-[WF]    [2026-05-28 18:04:29 +0200] [INFO]      Running startup hooks...
-[WF]    [2026-05-28 18:04:29 +0200] [INFO]      Server is listening on 127.0.0.1:8000."""
+[WF]    [2026-07-06 18:04:29 +0200] [INFO]      Mixing your WebFluid application.
+[WF]    [2026-07-06 18:04:29 +0200] [INFO]      Running startup hooks...
+[WF]    [2026-07-06 18:04:29 +0200] [INFO]      Server is listening on 127.0.0.1:8000."""
         ) }}
 
         <p>
             Now you can access your app by opening <a href="http://localhost:8000">http://localhost:8000</a> in your browser.
             <br><br>
-            You may notice the warning inside your log / the console output. This is because Fluid sets up a SessionMiddleware
-            when it gets initialized. It is configured as insecure per default. We will take a closer look at configuring your
-            app in the next chapter.
-            <br><br>
-            For now if you would like to supress this warning, you need to run your app in debug mode using the
-            <code>-d</code> flag.
+            Fluid sets up a SessionMiddleware when it gets initialized. Outside of debug mode its cookie is marked
+            as secure, so if you develop locally over plain http and rely on the session, run your app in debug mode
+            using the <code>-d</code> flag. Debug mode also turns on nicer error pages and more verbose logging.
+            We will take a closer look at configuring your app in the next chapter.
         </p>
 
         <h2>Next steps</h2>

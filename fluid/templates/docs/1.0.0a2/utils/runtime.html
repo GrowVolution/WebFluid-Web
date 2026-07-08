@@ -1,0 +1,143 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import info, warning %}
+
+{% block title %}Runtime — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Framework utility</span>
+        <h1 class="doc-h1">Runtime</h1>
+        <p class="doc-lead">
+            Between booting and shutting down, your app spends its life handling requests. WebFluid wraps
+            each one in a <strong>context</strong> and gives you a handful of hooks to shape the request
+            on its way in and the response on its way out. This is the layer that makes
+            <code>render</code>, <code>url_for</code> and friends "just know" about the current request.
+        </p>
+
+        <h2>The request context</h2>
+        <p>
+            On every request the framework enters a <code>FluidContext</code>. From anywhere downstream
+            &mdash; a route, a service, an event handler &mdash; you can grab it with
+            <code>FluidContext.current()</code> to reach the active app and request without threading
+            them through every function call. It's the same pattern our generated routes use:
+        </p>
+
+        {{ code(
+            "fluid/app/index.py", "python",
+            '''from webfluid.core.context import FluidContext
+
+
+async def handle_request():
+    ctx = FluidContext.current()
+    user = ctx.request.session.get("user")
+    return await ctx.fluid.render("index.html", user=user)'''
+        ) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            Outside of a request there is no context, and FluidContext.current() raises a RuntimeError.
+            The framework's own helpers handle this gracefully by falling back to defaults, and so should
+            yours when code might run from, say, a scheduled job.
+        """) }}
+
+        <h2>Shaping requests and responses</h2>
+        <p>
+            Three decorators let you step into the request flow, all running inside that context:
+        </p>
+        <ul>
+            <li>
+                <code>before_request</code> &mdash; runs before the route. Return nothing to continue,
+                or return a response to short-circuit the request entirely.
+            </li>
+            <li>
+                <code>after_request</code> &mdash; receives the response and returns one (possibly a new
+                one). Great for headers or post-processing.
+            </li>
+            <li>
+                <code>context_processor</code> &mdash; returns a dict that is merged into every
+                <code>render</code>, so shared template variables don't have to be passed by hand.
+            </li>
+        </ul>
+
+        {{ code(
+            "fluid/runtime.py", "python",
+            '''from webfluid.core.context import FluidContext
+
+
+def register(app):
+
+    @app.before_request
+    def require_session():
+        ctx = FluidContext.current()
+        if ctx.request.url.path.startswith("/admin"):
+            if not ctx.request.session.get("user"):
+                from fastapi.responses import RedirectResponse
+                return RedirectResponse("/login")
+
+    @app.after_request
+    async def add_header(response):
+        response.headers["X-Powered-By"] = "WebFluid"
+        return response
+
+    @app.context_processor
+    def globals_():
+        return {"brand": "My Portal"}'''
+        ) }}
+
+        <p>
+            This is exactly how the surface's processing layer works internally &mdash; it registers a
+            context processor for the shared template variables, a before-request logger and an
+            after-request hook that swaps in the styled error pages. Additives get their own scoped
+            versions of all three, as we saw in the previous chapter.
+        </p>
+
+        <h2>Themes at runtime</h2>
+        <p>
+            With <code>WF_THEMES</code> enabled, theme selection is a request-time decision. You remember
+            a choice in the session and read the active one back when rendering:
+        </p>
+
+        {{ code(
+            "example", "python",
+            '''from fastapi import Request
+
+
+async def pick_theme(request: Request):
+    ctx = FluidContext.current()
+    ctx.fluid.set_theme(request, "ocean")   # stored in the session
+    return await ctx.fluid.render("index.html")'''
+        ) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            Server-side theme switching is still rough in this alpha. <code>set_theme</code> validates the
+            name the same way <code>add_theme</code> does and rejects a name that is already registered, so
+            it currently cannot select one of your registered themes (and an unregistered name is ignored
+            by <code>get_theme</code>). The client-side light/dark helper
+            (<code>window.wf.switchTheme()</code>) is independent of this and works fine.
+        """) }}
+
+        <h2>Proxies and rate limiting</h2>
+        <p>
+            Two more runtime conveniences worth knowing. If <code>PROXY_FIX</code> is set, the
+            <code>fluid.asgi_app</code> your server runs is wrapped in a proxy-headers middleware so
+            client ips survive a reverse proxy. And the built-in
+            <a href="https://slowapi.readthedocs.io/en/latest/">slowapi</a> limiter is reachable through
+            <code>fluid.limit</code> for per-route limits on top of the global defaults:
+        </p>
+
+        {{ code(
+            "example", "python",
+            '''@app.get("/expensive")
+@app.limit("5/minute")
+async def expensive(request: Request):
+    return {"ok": True}'''
+        ) }}
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/utils/logging">Logging</a>.</p>
+    </article>
+{% endblock %}

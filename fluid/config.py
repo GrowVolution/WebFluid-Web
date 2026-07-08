@@ -19,10 +19,14 @@ class Config(MyConfig):
     VERSIONS = {
         "1.0.0a1": {
             "stage": "alpha",
-            "date": "May 22, 2026",
+            "date": "May 22, 2026"
         },
+        "1.0.0a2": {
+            "stage": "alpha",
+            "date": "July 06, 2026"
+        }
     }
-    LATEST_VERSION = "1.0.0a1"
+    LATEST_VERSION = "1.0.0a2"
 
     BABEL_DEFAULT_LOCALE = "en"
     BABEL_SUPPORTED_LOCALES = [BABEL_DEFAULT_LOCALE, "de"]
