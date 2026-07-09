@@ -1,7 +1,8 @@
 from webfluid.core.config import register_config
 
 try: from fluid._my_config import MyConfig
-except ImportError: MyConfig = object
+except ImportError:
+    class MyConfig: pass
 
 
 @register_config(10)

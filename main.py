@@ -16,14 +16,16 @@ def create_app() -> Fluid:
     )
 
     if app.name == "home":
-        from fluid.app import home_router
+        from fluid.app import home_router, setup_home
+        setup_home()
         app.include_router(home_router)
 
-        from fluid.i18n.home import translations
+        from fluid.i18n import translations
         babel.update_translations("messages", translations)
 
     elif app.name == "docs":
-        from fluid.app import docs_router
+        from fluid.app import docs_router, setup_docs
+        setup_docs()
         app.include_router(docs_router)
         app.jinja_env.globals["versions"] = app.config["VERSIONS"].keys()
 
@@ -32,14 +34,14 @@ def create_app() -> Fluid:
         setup_ocean()
         app.include_router(ocean_router)
 
-        from fluid.i18n.ocean import translations
-        babel.update_translations("messages", translations)
+        # Ocean i18n is provided by the 'ocean' Additive
 
     app.jinja_env.globals["latest"] = app.config["LATEST_VERSION"]
     app.jinja_env.globals["home"] = app.config.get("HOME_URL", "https://webfluid.dev")
     app.jinja_env.globals["docs"] = app.config.get("DOCS_URL", "https://docs.webfluid.dev")
     app.jinja_env.globals["ocean"] = app.config.get("OCEAN_URL", "https://ocean.webfluid.dev")
 
+    # Alpha 2 workaround
     app.add_middleware(
         ProxyHeadersMiddleware,
         trusted_hosts=["*"]

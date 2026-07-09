@@ -12,14 +12,24 @@ ocean_router = APIRouter(
 )
 
 
+def setup_home():
+    from fluid.app.index import handle_request as index
+    home_router.get("/")(index)
+
+
+def setup_docs():
+    from fluid.app.docs import handle_latest as latest_docs, handle_request as docs
+    docs_router.get("/")(lambda: RedirectResponse("/latest/", status_code=301))
+    docs_router.get("/latest/{path:path}")(latest_docs)
+    docs_router.get("/v/{version}/{path:path}")(docs)
+
+
 def setup_ocean():
-    from fluid.app.discovery import handle_request as discovery
+    from fluid.app.ocean import (
+        handle_discovery as discovery,
+        handle_terms as terms,
+        handle_licensing as licensing
+    )
     ocean_router.get("/")(discovery)
-
-from fluid.app.index import handle_request as index
-home_router.get("/")(index)
-
-from fluid.app.docs import handle_latest as latest_docs, handle_request as docs
-docs_router.get("/")(lambda: RedirectResponse("/latest/", status_code=301))
-docs_router.get("/latest/{path:path}")(latest_docs)
-docs_router.get("/v/{version}/{path:path}")(docs)
+    ocean_router.get("/terms")(terms)
+    ocean_router.get("/licensing")(licensing)

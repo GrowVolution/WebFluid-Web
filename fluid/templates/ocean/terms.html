@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% from "partials/_footer.html" import ocean_footer %}
+
+{% block title %}{{ _("OCEAN_TERMS_TITLE") }} — WebFluid Ocean{% endblock %}
+
+{% block web_head %}
+    <meta name="description" content="{{ _("OCEAN_TERMS_INTRO") }}">
+{% endblock %}
+
+{% block nav %}
+    <div class="web docs-topbar-wrap">
+        <div class="docs-topbar">
+            <a class="docs-brand" href="/">
+                <img src="{{ url_for(wf_static, path='img/logo.png') }}" alt="Logo">
+                <span>WebFluid Ocean</span>
+            </a>
+
+            <div class="docs-topbar-links">
+                <div class="oc-nav">
+                    <input type="checkbox" id="ocNavToggle" class="oc-nav-checkbox">
+                    <label for="ocNavToggle" class="oc-nav-toggle" aria-label="{{ _('OCEAN_NAV_MENU') }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    </label>
+                    <div class="oc-nav-menu">
+                        <a href="{{ home }}" class="docs-topbar-link">{{ _("OCEAN_NAV_HOME") }}</a>
+                        <a href="{{ docs }}/latest/" class="docs-topbar-link">{{ _("OCEAN_NAV_DOCS") }}</a>
+                        <a href="/hub/" class="docs-topbar-link">{{ _("OCEAN_NAV_PUBLISH") }}</a>
+                    </div>
+                </div>
+                {% if user %}
+                    <a href="/users/" class="oc-avatar" id="ocAvatar" title="{{ user.username }}">
+                        <span>{{ user.username[:1] | upper }}</span>
+                    </a>
+                {% else %}
+                    <a href="/users/" class="web-btn web-btn-soft oc-login">{{ _("OCEAN_NAV_LOGIN") }}</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="web lp oc-page">
+        <section class="oc-hero">
+            <h1 class="oc-title">{{ _("OCEAN_TERMS_TITLE") }}</h1>
+            <p class="oc-sub">{{ _("OCEAN_TERMS_INTRO") }}</p>
+        </section>
+
+        <div class="oc-legal">
+            <h2>{{ _("OCEAN_TERMS_OPERATOR_H") }}</h2>
+            <p>{{ _("OCEAN_TERMS_OPERATOR_P") }}</p>
+
+            <h2>{{ _("OCEAN_TERMS_USAGE_H") }}</h2>
+            <p>{{ _("OCEAN_TERMS_USAGE_P") }}</p>
+
+            <h2>{{ _("OCEAN_TERMS_MOR_H") }}</h2>
+            <p>{{ _("OCEAN_TERMS_MOR_P") }}</p>
+
+            <h2>{{ _("OCEAN_TERMS_PRICES_H") }}</h2>
+            <p>{{ _("OCEAN_TERMS_PRICES_P") }}</p>
+
+            <h2>{{ _("OCEAN_TERMS_AVAILABILITY_H") }}</h2>
+            <p>{{ _("OCEAN_TERMS_AVAILABILITY_P") }}</p>
+
+            <h2>{{ _("OCEAN_TERMS_CHANGES_H") }}</h2>
+            <p>{{ _("OCEAN_TERMS_CHANGES_P") }}</p>
+
+            <h2>{{ _("OCEAN_TERMS_ABUSE_H") }}</h2>
+            <p>{{ _("OCEAN_TERMS_ABUSE_P") }}</p>
+
+            <h2>{{ _("OCEAN_TERMS_ACCOUNT_H") }}</h2>
+            <p>{{ _("OCEAN_TERMS_ACCOUNT_P") }}</p>
+
+            <h2>{{ _("OCEAN_TERMS_IP_H") }}</h2>
+            <p>{{ _("OCEAN_TERMS_IP_P") }}</p>
+
+            <h2>{{ _("OCEAN_TERMS_LIABILITY_H") }}</h2>
+            <p>{{ _("OCEAN_TERMS_LIABILITY_P") }}</p>
+
+            <h2>{{ _("OCEAN_TERMS_SUPPORT_H") }}</h2>
+            <p>{{ _("OCEAN_TERMS_SUPPORT_P") }}</p>
+
+            <h2>{{ _("OCEAN_TERMS_WITHDRAWAL_H") }}</h2>
+            <p>{{ _("OCEAN_TERMS_WITHDRAWAL_P") }}</p>
+
+            <h2>{{ _("OCEAN_TERMS_LAW_H") }}</h2>
+            <p>{{ _("OCEAN_TERMS_LAW_P") }}</p>
+        </div>
+
+        {{ ocean_footer() }}
+    </div>
+{% endblock %}

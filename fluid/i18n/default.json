@@ -89,7 +89,6 @@
   ],
   "HOME_TERMINAL": ["terminal", "Terminal"],
 
-  "HOME_HUB_BADGE": ["Ocean — coming soon", "Ocean — bald verfügbar"],
   "HOME_HUB_H2": ["A Hub for modular Additives", "Ein Hub für modulare Additives"],
   "HOME_HUB_P": [
   "WebFluid is modular by design. Ocean will be the place to publish, discover, and pull version-pinned Additives straight into your runtime, so sharing a module is as simple as declaring it in your manifest.",

@@ -46,7 +46,7 @@ services:
         - traefik.http.services.fluidDocs.loadbalancer.server.port=8000
 
   ocean:
-    image: gr0wvolution/webfluid:alpha
+    image: gr0wvolution/wf-ocean:latest
     command: [ "ocean", "-h", "0.0.0.0" ]
     volumes:
       - /mnt/bulk/webfluid:/app

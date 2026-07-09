@@ -860,6 +860,32 @@
 
 
     .oc-page { min-height: calc(100dvh - 4rem - 1px); }
+
+    .oc-legal {
+        @apply max-w-3xl mx-auto px-6 w-full flex-1;
+        padding-bottom: clamp(3rem, 6vw, 4.5rem);
+    }
+    .oc-legal h2 {
+        @apply font-display font-bold text-xl tracking-tight text-slate-100 mt-10;
+    }
+    .oc-legal h2:first-child { @apply mt-0; }
+    .oc-legal p { @apply mt-3 leading-relaxed text-slate-300; }
+    .oc-legal ul {
+        @apply mt-3 pl-6 flex flex-col gap-1.5 text-slate-300 leading-relaxed;
+        list-style: disc;
+    }
+    .oc-legal li::marker { color: color-mix(in srgb, var(--tertiary-1) 70%, transparent); }
+    .oc-legal a {
+        @apply underline;
+        color: var(--tertiary-1);
+        text-decoration-color: color-mix(in srgb, var(--tertiary-1) 40%, transparent);
+    }
+    .oc-legal a:hover { text-decoration-color: var(--tertiary-1); }
+    .oc-legal strong { @apply text-slate-100 font-semibold; }
+    .oc-legal code {
+        @apply font-mono text-sm px-1.5 py-0.5 rounded bg-white/10 text-tertiary-1;
+    }
+
     .oc-profile {
         @apply max-w-5xl mx-auto px-6 w-full flex-1 flex flex-col justify-center gap-8;
         padding-top: clamp(2rem, 5vw, 3.5rem);
