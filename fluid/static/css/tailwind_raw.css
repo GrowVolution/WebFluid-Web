@@ -116,6 +116,31 @@
     .web-footer-link {
         @apply text-sm text-slate-400 transition hover:text-slate-100;
     }
+    .web-footer-break {
+        display: none;
+    }
+
+    @media (max-width: 639px) {
+        .web-footer-inner {
+            @apply flex-col text-center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+        .web-footer-text {
+            text-align: center;
+            line-height: 1;
+        }
+        .web-footer-dash {
+            display: none;
+        }
+        .web-footer-break {
+            display: block;
+        }
+        .web-footer-links {
+            @apply flex-col items-center;
+            gap: 0.375rem;
+        }
+    }
 
 
     .lp {
