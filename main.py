@@ -1,6 +1,9 @@
 from webfluid import Fluid
 from webfluid.core.ext import babel
+from webfluid.core.context import FluidContext
+from webfluid.extensions.babel.utils import load_locale, parse_best_match
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+from babel import Locale
 
 
 def create_app() -> Fluid:
@@ -46,6 +49,31 @@ def create_app() -> Fluid:
         ProxyHeadersMiddleware,
         trusted_hosts=["*"]
     )
+    @babel.locale_selector
+    def get_locale():
+        try: ctx = FluidContext.current()
+        except RuntimeError:
+            return load_locale(babel.default_locale)
+
+        if babel.locale_selector_fn is not None:
+            locale = babel.locale_selector_fn()
+            if isinstance(locale, Locale): return locale
+            return load_locale(babel.locale_selector_fn())
+
+        request = ctx.request
+        if request is None:
+            return load_locale(babel.default_locale)
+
+        locale = (
+            request.query_params.get("lang")    # <- Missing in 1.0.0a2 / required for SEO
+            or request.cookies.get("lang")
+            or parse_best_match(
+                request.headers.get("Accept-Language"),
+                babel.supported_locales
+            )
+            or babel.default_locale
+        )
+        return load_locale(locale)
 
     return app
 

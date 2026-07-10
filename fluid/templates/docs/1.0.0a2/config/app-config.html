@@ -36,10 +36,6 @@
             """[general]
 SECRET_KEY = supersecret
 
-[data]
-DATABASE_URI = sqlite:///test.db
-REDIS_URI = redis://localhost:6379
-
 [extensions]
 EXT_SCHEDULING = 0
 EXT_SQLALCHEMY = 1
@@ -56,15 +52,19 @@ WF_TAILWIND = 1
 WF_PROCESSING = 1
 WF_ADDITIVES = 1
 
+[data]
+DATABASE_URI = sqlite:///test.db
+REDIS_URI = redis://localhost:6379
+
 [security]
 SECURITY_SECRET = another-secret
 
-[additives]
-my_additive = 1
-
 [mail]
 MAIL_USERNAME = noreply@example.org
-MAIL_PASSWORD = supersecret"""
+MAIL_PASSWORD = supersecret
+
+[additives]
+my_additive = 1"""
         ) }}
 
         <span class="my-5">&nbsp;</span>

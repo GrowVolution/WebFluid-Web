@@ -3,6 +3,11 @@
 
 {% block title %}{{ _("HOME_TITLE") }}{% endblock %}
 
+{% block web_head %}
+    <link rel="alternate" hreflang="de" href="{{ home }}?lang=de" />
+    <link rel="alternate" hreflang="en" href="{{ home }}?lang=en" />
+{% endblock %}
+
 {% block content %}
     <div class="web lp">
         <section class="lp-hero">
