@@ -55,11 +55,6 @@ def create_app() -> Fluid:
         except RuntimeError:
             return load_locale(babel.default_locale)
 
-        if babel.locale_selector_fn is not None:
-            locale = babel.locale_selector_fn()
-            if isinstance(locale, Locale): return locale
-            return load_locale(babel.locale_selector_fn())
-
         request = ctx.request
         if request is None:
             return load_locale(babel.default_locale)
