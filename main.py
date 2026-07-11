@@ -3,7 +3,6 @@ from webfluid.core.ext import babel
 from webfluid.core.context import FluidContext
 from webfluid.extensions.babel.utils import load_locale, parse_best_match
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
-from babel import Locale
 
 
 def create_app() -> Fluid:

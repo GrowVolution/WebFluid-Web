@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, PlainTextResponse
 
 home_router = APIRouter(
     default_response_class=HTMLResponse
@@ -13,15 +13,26 @@ ocean_router = APIRouter(
 
 
 def setup_home():
-    from fluid.app.index import handle_request as index
+    from fluid.app.index import (
+        handle_request as index,
+        handle_sitemap as sitemap,
+        handle_sitemaps as sitemaps
+    )
     home_router.get("/")(index)
+    home_router.get("/sitemap", response_class=PlainTextResponse)(sitemap)
+    home_router.get("/sitemaps", response_class=PlainTextResponse)(sitemaps)
 
 
 def setup_docs():
-    from fluid.app.docs import handle_latest as latest_docs, handle_request as docs
+    from fluid.app.docs import (
+        handle_latest as latest_docs,
+        handle_request as docs,
+        handle_sitemap as sitemap
+    )
     docs_router.get("/")(lambda: RedirectResponse("/latest/", status_code=301))
     docs_router.get("/latest/{path:path}")(latest_docs)
     docs_router.get("/v/{version}/{path:path}")(docs)
+    docs_router.get("/sitemap", response_class=PlainTextResponse)(sitemap)
 
 
 def setup_ocean():
