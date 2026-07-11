@@ -30,7 +30,7 @@ async def handle_sitemaps():
     docs_timestamp = datetime.strptime(
         ctx.fluid.config["VERSIONS"][latest_docs]["date"],
         "%B %d, %Y"
-    ).isoformat()
+    ).date().isoformat()
 
     async with httpx.AsyncClient() as client:
         res = await client.get(
@@ -39,7 +39,7 @@ async def handle_sitemaps():
             )}/hub/sitemap/timestamp"
         )
     ocean_timestamp = res.json().get(
-        "timestamp", datetime.now(UTC).isoformat()
+        "timestamp", datetime.now(UTC).date().isoformat()
     )
 
     return Response(

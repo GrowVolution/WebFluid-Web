@@ -75,7 +75,7 @@ async def handle_sitemap():
             )
             sitemap[f"{docs_url}{prefix}{path}"] = datetime.strptime(
                 data["date"], "%B %d, %Y"
-            ).isoformat()
+            ).date().isoformat()
     return Response(
         content=await ctx.fluid.render("sitemaps/map.xml", sitemap=sitemap),
         media_type="application/xml"
