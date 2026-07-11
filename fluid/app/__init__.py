@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from fastapi.responses import HTMLResponse, RedirectResponse, PlainTextResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 home_router = APIRouter(
     default_response_class=HTMLResponse
@@ -19,8 +19,8 @@ def setup_home():
         handle_sitemaps as sitemaps
     )
     home_router.get("/")(index)
-    home_router.get("/sitemap", response_class=PlainTextResponse)(sitemap)
-    home_router.get("/sitemaps", response_class=PlainTextResponse)(sitemaps)
+    home_router.get("/sitemap", response_class=Response)(sitemap)
+    home_router.get("/sitemaps", response_class=Response)(sitemaps)
 
 
 def setup_docs():
@@ -32,7 +32,7 @@ def setup_docs():
     docs_router.get("/")(lambda: RedirectResponse("/latest/", status_code=301))
     docs_router.get("/latest/{path:path}")(latest_docs)
     docs_router.get("/v/{version}/{path:path}")(docs)
-    docs_router.get("/sitemap", response_class=PlainTextResponse)(sitemap)
+    docs_router.get("/sitemap", response_class=Response)(sitemap)
 
 
 def setup_ocean():

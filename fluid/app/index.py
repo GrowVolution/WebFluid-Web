@@ -1,3 +1,4 @@
+from fastapi.responses import Response
 from webfluid.core.context import FluidContext
 from datetime import datetime, UTC
 import httpx
@@ -10,12 +11,15 @@ async def handle_request():
 
 async def handle_sitemap():
     ctx = FluidContext.current()
-    return await ctx.fluid.render(
-        "sitemaps/map.xml", sitemap={
-            ctx.fluid.config.get(
-                "HOME_URL", "https://webfluid.dev"
-            ): "2026-07-11"
-        }
+    return Response(
+        content=await ctx.fluid.render(
+            "sitemaps/map.xml", sitemap={
+                ctx.fluid.config.get(
+                    "HOME_URL", "https://webfluid.dev"
+                ): "2026-07-11"
+            }
+        ),
+        media_type="application/xml"
     )
 
 
@@ -38,8 +42,11 @@ async def handle_sitemaps():
         "timestamp", datetime.now(UTC).isoformat()
     )
 
-    return await ctx.fluid.render(
-        "sitemaps/index.xml",
-        latest_docs=docs_timestamp,
-        latest_ocean=ocean_timestamp
+    return Response(
+        content=await ctx.fluid.render(
+            "sitemaps/index.xml",
+            latest_docs=docs_timestamp,
+            latest_ocean=ocean_timestamp
+        ),
+        media_type="application/xml"
     )

@@ -1,4 +1,4 @@
-from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi.responses import RedirectResponse, HTMLResponse, Response
 from webfluid.core.context import FluidContext
 from webfluid.core.constants import FRAMEWORK_ID
 from datetime import datetime
@@ -76,4 +76,7 @@ async def handle_sitemap():
             sitemap[f"{docs_url}{prefix}{path}"] = datetime.strptime(
                 data["date"], "%B %d, %Y"
             ).isoformat()
-    return await ctx.fluid.render("sitemaps/map.xml", sitemap=sitemap)
+    return Response(
+        content=await ctx.fluid.render("sitemaps/map.xml", sitemap=sitemap),
+        media_type="application/xml"
+    )
