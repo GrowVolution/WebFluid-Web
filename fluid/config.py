@@ -31,3 +31,6 @@ class Config(MyConfig):
 
     BABEL_DEFAULT_LOCALE = "en"
     BABEL_SUPPORTED_LOCALES = [BABEL_DEFAULT_LOCALE, "de"]
+
+    PROXY_FIX = True
+    PROXY_TRUSTED_HOSTS = "*"

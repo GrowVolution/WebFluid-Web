@@ -1,11 +1,8 @@
 from webfluid import Fluid
 from webfluid.core.ext import babel
-from webfluid.core.context import FluidContext
-from webfluid.extensions.babel.utils import load_locale, parse_best_match
-from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 
-def create_app() -> Fluid:
+def prepare_fluid() -> Fluid:
     app = Fluid(__name__)
 
     app.add_source('<link rel="preconnect" href="https://fonts.googleapis.com">', 10)
@@ -43,35 +40,10 @@ def create_app() -> Fluid:
     app.jinja_env.globals["docs"] = app.config.get("DOCS_URL", "https://docs.webfluid.dev")
     app.jinja_env.globals["ocean"] = app.config.get("OCEAN_URL", "https://ocean.webfluid.dev")
 
-    # Alpha 2 workaround
-    app.add_middleware(
-        ProxyHeadersMiddleware,
-        trusted_hosts=["*"]
-    )
-    @babel.locale_selector
-    def get_locale():
-        try: ctx = FluidContext.current()
-        except RuntimeError:
-            return load_locale(babel.default_locale)
-
-        request = ctx.request
-        if request is None:
-            return load_locale(babel.default_locale)
-
-        locale = (
-            request.query_params.get("lang")    # <- Missing in 1.0.0a2 / required for SEO
-            or request.cookies.get("lang")
-            or parse_best_match(
-                request.headers.get("Accept-Language"),
-                babel.supported_locales
-            )
-            or babel.default_locale
-        )
-        return load_locale(locale)
-
     return app
 
 
 if __name__ == "__main__":
-    fluid = create_app()
+    fluid = prepare_fluid()
+    print(fluid.config)
     fluid.mix()

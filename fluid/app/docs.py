@@ -59,7 +59,7 @@ async def handle_sitemap():
     docs_url = ctx.fluid.config.get(
         "DOCS_URL", "https://docs.webfluid.dev"
     )
-    docs = ctx.fluid.app_root / FRAMEWORK_ID / "templates" / "docs"
+    docs = ctx.fluid.project_root / FRAMEWORK_ID / "templates" / "docs"
     latest = ctx.fluid.config["LATEST_VERSION"]
     sitemap = {}
     for version, data in ctx.fluid.config["VERSIONS"].items():

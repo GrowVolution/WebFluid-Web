@@ -5,7 +5,6 @@
 .claude/
 __pycache__/
 node_modules/
-app_services/
 migrate/
 translations/
 dist/
@@ -20,6 +19,5 @@ ocean.ini
 messages.pot
 tailwind.css
 _my_config.py
-start.bat
 *.db
 package-lock.json
