@@ -102,5 +102,8 @@
   "Tauch in die Docs ein und veröffentliche dein erstes Additive in Minuten."
   ],
   "HOME_GET_STARTED": ["Get started", "Loslegen"],
-  "HOME_STAR_GITHUB": ["🌟 Star on GitHub", "🌟 Auf GitHub favorisieren"]
+  "HOME_STAR_GITHUB": ["🌟 Star on GitHub", "🌟 Auf GitHub favorisieren"],
+
+  "Imprint": ["Imprint", "Impressum"],
+  "Privacy": ["Privacy", "Datenschutz"]
 }

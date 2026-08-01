@@ -45,5 +45,4 @@ def prepare_fluid() -> Fluid:
 
 if __name__ == "__main__":
     fluid = prepare_fluid()
-    print(fluid.config)
     fluid.mix()

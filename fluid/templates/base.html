@@ -3,6 +3,13 @@
 {% block head %}
     {{ frontend() }}
     <link rel="stylesheet" href="{{ url_for('static', path='css/highlight.atom-one.css') }}">
+    {% block seo %}
+        {% if canonical %}<link rel="canonical" href="{{ canonical }}" />{% endif %}
+        {% for code, url in alternates or [] %}
+            <link rel="alternate" hreflang="{{ code }}" href="{{ url }}" />
+        {% endfor %}
+        {% if x_default %}<link rel="alternate" hreflang="x-default" href="{{ x_default }}" />{% endif %}
+    {% endblock %}
     {% block web_head %}{% endblock %}
 {% endblock %}
 

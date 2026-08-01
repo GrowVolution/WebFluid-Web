@@ -1,6 +1,6 @@
 services:
   home:
-    image: gr0wvolution/webfluid:alpha
+    image: gr0wvolution/webfluid:beta
     command: ["home", "-h", "0.0.0.0"]
     volumes:
       - /mnt/bulk/webfluid:/app
@@ -23,7 +23,7 @@ services:
         - traefik.http.services.fluid.loadbalancer.server.port=8000
 
   docs:
-    image: gr0wvolution/webfluid:alpha
+    image: gr0wvolution/webfluid:beta
     command: ["docs", "-h", "0.0.0.0"]
     volumes:
       - /mnt/bulk/webfluid:/app

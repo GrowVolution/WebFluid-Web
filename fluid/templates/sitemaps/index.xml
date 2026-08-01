@@ -4,6 +4,11 @@
     xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
     <sitemap>
+        <loc>{{ home }}/sitemap</loc>
+        <lastmod>{{ latest_home }}</lastmod>
+    </sitemap>
+
+    <sitemap>
         <loc>{{ docs }}/sitemap</loc>
         <lastmod>{{ latest_docs }}</lastmod>
     </sitemap>

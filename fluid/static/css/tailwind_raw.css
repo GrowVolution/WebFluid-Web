@@ -55,6 +55,20 @@
 }
 
 @layer base {
+    :root {
+        --wf-blend: color-mix(in srgb,
+                var(--primary-5, var(--default-5)) 62%,
+                var(--secondary-5, var(--default-4)));
+        --wf-deep: color-mix(in srgb, var(--wf-blend) 52%, #000);
+        --wf-veil: color-mix(in srgb, var(--wf-blend) 90%, #000);
+        --wf-sunk: color-mix(in srgb, var(--wf-blend) 78%, #000);
+        --wf-page:
+                radial-gradient(900px 600px at 78% -8%, color-mix(in srgb, var(--secondary-2) 32%, transparent), transparent 60%),
+                radial-gradient(800px 600px at 8% 22%, color-mix(in srgb, var(--tertiary-3) 28%, transparent), transparent 55%),
+                radial-gradient(1200px 720px at 50% 110%, color-mix(in srgb, var(--tertiary-4) 30%, transparent), transparent 62%),
+                linear-gradient(180deg, var(--primary-5, var(--default-5)), var(--wf-deep) 76%);
+    }
+
     .web {
         @apply font-body text-slate-100;
     }
@@ -73,7 +87,7 @@
         @apply inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-base transition;
     }
     .web-btn-primary {
-        @apply text-primary-5 bg-gradient-to-r from-tertiary-1 to-info-1;
+        @apply text-primary-5 bg-linear-to-r from-tertiary-1 to-info-1;
         box-shadow: 0 12px 35px color-mix(in srgb, var(--tertiary-2) 45%, transparent);
     }
     .web-btn-primary:hover:not(:disabled) {
@@ -102,7 +116,7 @@
 
     .web-footer {
         @apply border-t border-white/10;
-        background: color-mix(in srgb, var(--primary-5) 80%, #000);
+        background: var(--wf-sunk);
     }
     .web-footer-inner {
         @apply max-w-7xl mx-auto px-6 py-8 flex flex-wrap gap-4 items-center justify-between;
@@ -145,10 +159,7 @@
 
     .lp {
         @apply min-h-dvh flex flex-col;
-        background:
-                radial-gradient(900px 600px at 78% -8%, color-mix(in srgb, var(--secondary-2) 35%, transparent), transparent 60%),
-                radial-gradient(800px 600px at 8% 22%, color-mix(in srgb, var(--tertiary-3) 30%, transparent), transparent 55%),
-                linear-gradient(180deg, var(--primary-5), #060f1f 70%);
+        background: var(--wf-page);
     }
     .lp-hero {
         @apply relative max-w-7xl mx-auto px-6 grid gap-10 items-center;
@@ -293,7 +304,7 @@
         grid-template-columns: 1fr;
         background:
                 radial-gradient(500px 260px at 12% -30%, color-mix(in srgb, var(--tertiary-2) 35%, transparent), transparent 70%),
-                color-mix(in srgb, var(--primary-5) 60%, transparent);
+                color-mix(in srgb, var(--wf-blend) 60%, transparent);
     }
     @media (min-width: 820px) { .lp-hub-inner { grid-template-columns: 1.4fr .6fr; } }
     .lp-hub-badge {
@@ -337,7 +348,7 @@
 
     .docs-topbar-wrap {
         @apply sticky top-0 z-[100] border-b border-white/10;
-        background: color-mix(in srgb, var(--primary-5) 75%, transparent);
+        background: color-mix(in srgb, var(--wf-blend) 75%, transparent);
         backdrop-filter: blur(14px);
     }
     .docs-topbar {
@@ -365,7 +376,7 @@
         .oc-nav-menu {
             @apply absolute right-0 top-full mt-2 p-1.5 flex-col items-stretch gap-0.5 rounded-xl border border-white/10 z-[110];
             min-width: 11rem;
-            background: color-mix(in srgb, var(--primary-5) 92%, #000);
+            background: var(--wf-veil);
             backdrop-filter: blur(14px);
             box-shadow: 0 18px 45px rgba(0, 0, 0, .5);
             display: none;
@@ -380,7 +391,7 @@
         @apply border-r border-white/10;
         flex: 0 0 17rem;
         width: 17rem;
-        background: linear-gradient(180deg, var(--primary-5), #060f1f);
+        background: linear-gradient(180deg, var(--primary-5), var(--wf-deep));
     }
     .docs-sidebar-inner {
         @apply sticky overflow-y-auto;
@@ -410,7 +421,7 @@
     }
     .docs-version-menu {
         @apply absolute left-0 right-0 z-100 mt-1.5 p-1.5 rounded-xl border border-white/10 flex flex-col gap-0.5;
-        background: color-mix(in srgb, var(--primary-5) 92%, #000);
+        background: var(--wf-veil);
         backdrop-filter: blur(14px);
         box-shadow: 0 18px 45px rgba(0, 0, 0, .5);
     }
@@ -698,7 +709,7 @@
         background-size: 1rem;
     }
     .oc-select option {
-        background-color: #0f172b;
+        background-color: var(--wf-veil);
         color: #e2e8f0;
     }
     .oc-filter-btn {
@@ -818,7 +829,7 @@
     }
     .oc-panel-card {
         @apply w-full max-w-md p-7 rounded-2xl border border-white/10 flex flex-col gap-4 text-center items-center;
-        background: color-mix(in srgb, var(--primary-5) 92%, #000);
+        background: var(--wf-veil);
         box-shadow: 0 30px 70px rgba(0, 0, 0, .5);
     }
     .oc-panel-card p {
@@ -850,7 +861,7 @@
 
     .oc-suggestions {
         @apply absolute left-0 right-0 top-full mt-2 z-20 overflow-hidden rounded-xl;
-        background: color-mix(in srgb, var(--primary-5) 95%, #000);
+        background: var(--wf-veil);
         border: 1px solid rgba(255, 255, 255, .12);
         box-shadow: 0 20px 50px rgba(0, 0, 0, .5);
     }

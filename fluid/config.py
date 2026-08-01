@@ -17,6 +17,8 @@ class Config(MyConfig):
 		'type': 'none'
 	}
 
+    HOME_LASTMOD = "2026-08-01"
+
     VERSIONS = {
         "1.0.0a1": {
             "stage": "alpha",
@@ -28,6 +30,11 @@ class Config(MyConfig):
         }
     }
     LATEST_VERSION = "1.0.0a2"
+
+    OCEAN_SITEMAP_EXTRA = {
+        "/terms": "2026-07-11",
+        "/licensing": "2026-07-11"
+    }
 
     BABEL_DEFAULT_LOCALE = "en"
     BABEL_SUPPORTED_LOCALES = [BABEL_DEFAULT_LOCALE, "de"]

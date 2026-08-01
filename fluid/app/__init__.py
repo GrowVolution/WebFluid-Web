@@ -15,10 +15,12 @@ ocean_router = APIRouter(
 def setup_home():
     from fluid.app.index import (
         handle_request as index,
+        handle_robots as robots,
         handle_sitemap as sitemap,
         handle_sitemaps as sitemaps
     )
     home_router.get("/")(index)
+    home_router.get("/robots.txt", response_class=Response)(robots)
     home_router.get("/sitemap", response_class=Response)(sitemap)
     home_router.get("/sitemaps", response_class=Response)(sitemaps)
 
@@ -27,20 +29,24 @@ def setup_docs():
     from fluid.app.docs import (
         handle_latest as latest_docs,
         handle_request as docs,
+        handle_robots as robots,
         handle_sitemap as sitemap
     )
     docs_router.get("/")(lambda: RedirectResponse("/latest/", status_code=301))
+    docs_router.get("/robots.txt", response_class=Response)(robots)
+    docs_router.get("/sitemap", response_class=Response)(sitemap)
     docs_router.get("/latest/{path:path}")(latest_docs)
     docs_router.get("/v/{version}/{path:path}")(docs)
-    docs_router.get("/sitemap", response_class=Response)(sitemap)
 
 
 def setup_ocean():
     from fluid.app.ocean import (
         handle_discovery as discovery,
+        handle_robots as robots,
         handle_terms as terms,
         handle_licensing as licensing
     )
     ocean_router.get("/")(discovery)
+    ocean_router.get("/robots.txt", response_class=Response)(robots)
     ocean_router.get("/terms")(terms)
     ocean_router.get("/licensing")(licensing)
