@@ -27,9 +27,13 @@ class Config(MyConfig):
         "1.0.0a2": {
             "stage": "alpha",
             "date": "July 06, 2026"
+        },
+        "1.0.0b1": {
+            "stage": "beta",
+            "date": "August 01, 2026"
         }
     }
-    LATEST_VERSION = "1.0.0a2"
+    LATEST_VERSION = "1.0.0b1"
 
     OCEAN_SITEMAP_EXTRA = {
         "/terms": "2026-07-11",

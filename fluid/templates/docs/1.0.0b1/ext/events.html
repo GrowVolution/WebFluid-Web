@@ -1,0 +1,245 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import info, warning %}
+
+{% block title %}Events — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Extensions</span>
+        <h1 class="doc-h1">Events</h1>
+        <p class="doc-lead">
+            So far our app reacts to requests. The Events battery lets it react to things happening
+            <em>inside</em> the app instead &mdash; a small publish / subscribe layer with a twist:
+            the same events reach across to the browser through a managed WebSocket, so you can push
+            live updates without writing any socket plumbing yourself.
+        </p>
+
+        <h2>Enabling events</h2>
+        <p>
+            Set <code>EXT_EVENTS = 1</code>. On startup the manager mounts a WebSocket at
+            <code>/ws/events</code> and injects an <code>events.js</code> client into your pages. The
+            depth of the internal queues is the only knob, defaulting to five:
+        </p>
+
+        {{ code(
+            "app_configs/app.ini", "ini",
+            """[general]
+SECRET_KEY = supersecret
+
+[extensions]
+EXT_SQLALCHEMY = 1
+EXT_EVENTS = 1
+
+[events]
+EVENTS_EVENT_QUEUE_SIZE = 5
+EVENTS_CONFIGURE_SOCKET = 1"""
+        ) }}
+
+        <p>
+            <code>EVENTS_CONFIGURE_SOCKET</code> is on by default and is what mounts the socket and injects
+            the client. Turn it off for an app that only ever uses events server-side &mdash; a worker, or
+            an API without a browser in front of it &mdash; and everything below still works, minus the
+            browser half.
+        </p>
+
+        <h2>Signals, events and visibility</h2>
+        <p>
+            An event is identified by a name. Before you can trigger one, it has to exist. The simplest
+            way to declare a pure broadcast channel is <code>create_signal</code>. Every event carries
+            two flags worth understanding:
+        </p>
+        <ul>
+            <li>
+                <code>singleton</code> &mdash; whether the name may only ever be registered once.
+            </li>
+            <li>
+                <code>internal</code> &mdash; whether the event stays server-only. Internal events are
+                invisible to the browser; only <strong>public</strong> events (<code>internal=False</code>)
+                can be subscribed to or triggered from the client.
+            </li>
+        </ul>
+
+        <p>
+            Now that our app is structured around an app factory, event handlers deserve their own
+            home. We'll keep them in a <code>fluid/events</code> package and declare a public signal
+            that fires whenever a model is created:
+        </p>
+
+        {{ code(
+            "fluid/events/models.py", "python",
+            '''from webfluid.core.ext import events
+
+
+def register():
+    # A public broadcast channel the browser is allowed to listen to.
+    events.create_signal("model:created", internal=False)
+
+    # A server-side reaction. Handlers receive the event data and run
+    # inside a fresh framework context for you.
+    @events.event("model:created", internal=False)
+    async def on_model_created(data):
+        from webfluid.utils.logging import factory as log
+        log.log(f"A new model appeared: {data}")'''
+        ) }}
+
+        <p>
+            Note that this is a <em>function</em>, not module-level code. Declaring a channel starts its
+            broadcast loop, and a loop needs an event loop to live in &mdash; which does not exist yet while
+            your factory is assembling the app. So we hand the registration to a startup hook, and the
+            framework calls it at the right moment:
+        </p>
+
+        {{ code(
+            "main.py", "python",
+            '''def prepare_fluid() -> Fluid:
+    app = Fluid(__name__)
+
+    from fluid.app import app_router
+    from fluid.api import api_router
+    app.include_router(app_router)
+    app.include_router(api_router)
+
+    from fluid.events.models import register as register_events
+    app.startup_hook(register_events)
+
+    my_ext.expand_fluid(app)
+
+    return app'''
+        ) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            Startup hooks get their own chapter later on; for now it is enough to know that this one runs
+            once, inside the running loop, before the server accepts its first request. Handlers must
+            accept exactly one argument: the event data.
+        """) }}
+
+        <h2>Triggering an event</h2>
+        <p>
+            From anywhere in your app you publish data to a channel with <code>events.trigger</code>.
+            Every registered handler runs, and every subscribed browser receives the payload. Our
+            <code>add_model</code> handler is the obvious place &mdash; only it changes here,
+            <code>get_model</code> stays exactly as it was in the
+            <a href="/v/{{ version }}/ext/mailman">Mail</a> chapter:
+        </p>
+
+        {{ code(
+            "fluid/api/models.py", "python",
+            '''from webfluid.core.ext import db, events
+from fastapi import Request
+from fastapi.exceptions import HTTPException
+
+from fluid.models import MyModel
+from fluid.services.notify import welcome
+
+
+async def add_model(request: Request):
+    data = await request.json()
+    value = data.get("value")
+    if not value:
+        raise HTTPException(status_code=400, detail="Bad Request")
+
+    async with db.async_executor(model=MyModel) as e:
+        model = await e.insert(MyModel(value), flush=True)
+
+    welcome("friend@example.org", model.value)
+
+    # Publishing is fire-and-forget and does not block: it drops the
+    # payload into the channel and returns. Every handler runs and every
+    # subscribed browser gets it, on the loop behind that channel.
+    events.trigger("model:created", {
+        "id": model.id,
+        "value": model.value
+    })
+
+    return {"model_id": model.id, "value": model.value}'''
+        ) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            <code>trigger</code> is deliberately synchronous &mdash; there is nothing to await, because
+            nobody is waiting. If you need an answer back, that is what queries are for, and they are
+            next.
+        """) }}
+
+        <h2>Reaching the browser</h2>
+        <p>
+            The browser half rides in with the <a href="/v/{{ version }}/surface/tooling">surface</a> layer
+            we'll set up in the Frontend chapters: it injects a small <code>events.js</code> client that lives
+            under <code>window.wf.ext.events</code>. Once that is in place, subscribing to a public event
+            from a page takes a handful of lines &mdash; the client transparently reconnects and keeps a
+            listen loop alive for you:
+        </p>
+
+        {{ code(
+            "browser", "html",
+            """&lt;script type=&quot;module&quot;&gt;
+    const events = new window.wf.ext.events.EventManager()
+
+    await events.subscribe(&quot;model:created&quot;)
+    events.registerHandler(&quot;model:created&quot;, (data) =&gt; {
+        console.log(&quot;A model was created:&quot;, data)
+    })
+&lt;/script&gt;"""
+        ) }}
+
+        <h2>Queries: asking for an answer</h2>
+        <p>
+            Events are fire-and-forget. When you need a value back instead, register a
+            <code>query</code> and call <code>events.request</code>. A singleton query returns the
+            single handler's result; a non-singleton one collects a list from all handlers:
+        </p>
+
+        {{ code(
+            "fluid/events/models.py", "python",
+            '''from webfluid.core.ext import db, events
+from sqlalchemy import select, func
+
+from fluid.models import MyModel
+
+
+def register():
+    events.create_signal("model:created", internal=False)
+
+    @events.event("model:created", internal=False)
+    async def on_model_created(data):
+        from webfluid.utils.logging import factory as log
+        log.log(f"A new model appeared: {data}")
+
+    @events.query("model:count")
+    async def count_models(_):
+        async with db.async_executor(model=MyModel) as e:
+            result = await e.exec(select(func.count(MyModel.id)), scalars=False)
+            return result.scalar()
+
+
+# Somewhere else in your app:
+# total = await events.request("model:count")'''
+        ) }}
+
+        <p>
+            Queries have no broadcast loop behind them, so they would survive being declared at import
+            time &mdash; but keeping every contract of a module in one <code>register()</code> means you
+            never have to remember which kind needs the loop and which does not.
+            <br><br>
+            On the server you can also consume a channel as an async stream with
+            <code>events.listen(name)</code>, which is handy for long-running consumers.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            Broadcasts use a bounded per-listener buffer sized by <code>EVENTS_EVENT_QUEUE_SIZE</code>.
+            A consumer that falls behind loses its oldest events &mdash; you get a warning in the log
+            naming the channel and the dropped payload, but the message is gone. Treat delivery as
+            best-effort: for dashboards and live notifications it works nicely, but it is not a durable
+            queue.
+        """) }}
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/ext/cache">Cache</a>.</p>
+    </article>
+{% endblock %}

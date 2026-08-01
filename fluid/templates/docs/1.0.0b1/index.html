@@ -1,0 +1,407 @@
+{% extends "docs/base_overview.html" %}
+{% from "docs/partials/_callout.html" import warning %}
+{% from "docs/partials/_overview.html" import feature, fix, bug, break %}
+
+{% block lead %}
+    This is the first beta of WebFluid. Beta 1 adds no new batteries &mdash; instead it takes everything
+    the two alphas grew and rebuilds it properly: the core and every extension went through a SOLID
+    refactor, the request path was measured and the slow parts removed, and the framework finally has a
+    test suite standing behind it. A handful of names moved on the way, so read the breaking changes
+    before you upgrade. The shape of the framework is settled now; pinning your version is still the
+    safe habit while the beta runs.
+{% endblock %}
+
+{% block features %}
+    <div class="doc-list">
+        {{ feature(
+            "A measured request path",
+            """
+                The pipeline no longer runs on Starlette's <code>BaseHTTPMiddleware</code>, Jinja stops
+                stat-ing every template outside debug mode, and <code>url_for</code> resolves through a
+                name index. Rendering a page got roughly 3.8x faster, <code>current_user</code> went from
+                seven queries to three, and the <code>require_admin</code> gate from seven to one.
+            """
+        ) }}
+
+        {{ feature(
+            "An async translation API",
+            """
+                <code>babel.agettext</code>, <code>angettext</code>, <code>apgettext</code> and
+                <code>anpgettext</code> read uncached keys through an async session instead of blocking
+                the loop. The synchronous API is unchanged, and the template callables deliberately stay
+                synchronous.
+            """
+        ) }}
+
+        {{ feature(
+            "Tests and budgets",
+            """
+                136 tests cover the lifecycle contracts, the request pipeline, version resolution,
+                additive enabling, the events socket against a real uvicorn, the security gates' query
+                counts and both translation paths. <code>benchmarks/bench.py</code> pins import, render
+                and request time to budgets so the numbers above cannot quietly regress.
+            """
+        ) }}
+
+        {{ feature(
+            "Rows that outlive their executor",
+            """
+                Both session factories now run with <code>expire_on_commit=False</code>. A row read
+                through <code>db.executor(...)</code> stays usable after the block closes, exactly like
+                the identical read through <code>db.async_executor(...)</code> always did.
+            """
+        ) }}
+
+        {{ feature(
+            "Additives that pull their dependencies",
+            """
+                <code>Additive.install()</code> now resolves the additives a manifest requires and pulls
+                the missing ones from the Ocean before extracting files and installing packages.
+                <code>wf ocean install</code> runs that step for everything it fetched.
+            """
+        ) }}
+
+        {{ feature(
+            "Bearer grants next to session gates",
+            """
+                <code>requirement_or_grant</code> and <code>requirement_and_grant</code> let a guarded
+                route accept either a logged-in session or a JWT carrying the named grant, so one
+                endpoint can serve a browser and a machine without a second implementation.
+            """
+        ) }}
+
+        {{ feature(
+            "Surfaces that follow their theme",
+            """
+                The bundled stylesheets no longer bottom out in a hardcoded navy. Page and error
+                backgrounds, the nav, footer, cards and traceback frames derive from four surface tokens
+                on <code>:root</code>, so a theme that is not blue-grey no longer ends in a blue-grey
+                lower half.
+            """
+        ) }}
+
+        {{ feature(
+            "One seam for forks",
+            """
+                <code>webfluid.core.identity</code> holds the framework id, name, abbreviation, urls and
+                hub endpoints. Everything that used to hardcode one of them &mdash; the environment
+                prefix, the logger names, the entry-point group, the base template, the static mount
+                &mdash; now derives from that single module.
+            """
+        ) }}
+    </div>
+{% endblock %}
+
+{% block fixes %}
+    <div class="doc-list">
+        {{ fix(
+            "Additive request hooks",
+            """
+                <code>Additive.before_request</code> and <code>Additive.after_request</code> raised
+                <code>AttributeError</code>. The three lifecycle implementations had drifted apart during
+                the refactor and now share one <code>Phase</code> type.
+            """
+        ) }}
+
+        {{ fix(
+            "The events socket",
+            """
+                <code>/ws/events</code> closed immediately under uvicorn because the socket handler was
+                spawned as a task while the endpoint returned. It is awaited now, and a test drives it
+                against a real server.
+            """
+        ) }}
+
+        {{ fix(
+            "Version requirements",
+            """
+                <code>check_required_version</code> compared only the numeric release parts, so
+                <code>&gt;1.0.0a1</code> did not match <code>1.0.0a2</code> and <code>==1.0.0a1</code> did
+                match <code>1.0.0b1</code>. Version handling runs on <code>packaging</code> now.
+            """
+        ) }}
+
+        {{ fix(
+            "Startup with Babel enabled",
+            """
+                Every application with <code>EXT_BABEL</code> died in its startup hook once the
+                relationships were tightened, because the bulk catalog load read a related column as an
+                attribute. It joins and eager-loads that key explicitly, which also replaced an
+                <code>EXISTS</code> subquery with a plain join.
+            """
+        ) }}
+
+        {{ fix(
+            "Translated model properties",
+            """
+                <code>Babel.domain_context</code> wrapped every decorated callable in an async wrapper,
+                so a <code>@property</code> over it yielded a coroutine on attribute access. It branches
+                on the wrapped function again, the way it did in alpha 2.
+            """
+        ) }}
+
+        {{ fix(
+            "Console output under wf run",
+            """
+                The application's output was streamed through a text-mode pipe, so a progress bar that
+                redraws itself in place arrived as one line per frame. The pipe is read as bytes now,
+                terminal geometry and encoding are handed to the child, and the reader runs to EOF so
+                nothing is lost between the stop message and the last shutdown hook.
+            """
+        ) }}
+
+        {{ fix(
+            "Tailwind without themes",
+            """
+                The frontend loader probes for the stylesheet that matches the switch you set, so a
+                surface shipping only <code>tailwind_no_themes.css</code> keeps its link.
+                <code>Frontend.include</code> no longer raises when Tailwind is enabled on an uncovered
+                frontend, and <code>cover_additive</code> no longer corrupts its own prefix when it is
+                called twice.
+            """
+        ) }}
+
+        {{ fix(
+            "Server-side theme switching",
+            """
+                <code>fluid.set_theme()</code> validated the name as if it were registering a new theme
+                and rejected every theme that actually existed. It now checks the opposite direction and
+                selects your registered themes.
+            """
+        ) }}
+
+        {{ fix(
+            "Migrations that mind your app",
+            """
+                The generated Alembic environment skips the Additives that are disabled for the app you
+                are migrating, so autogenerated revisions stop collecting foreign tables. It also
+                resolves <code>*_FILE</code> config values the same way <code>wf run</code> does, so
+                file-backed secrets reach the migration.
+            """
+        ) }}
+
+        {{ fix(
+            "Smaller sharp edges",
+            """
+                <code>Manifest.check_requirements</code> emptied its own requirement dictionary, so a
+                second check reported success. <code>try_import</code> re-raised when a parent package was
+                missing, which broke projects generated with <code>--skip-defaults</code>. And
+                <code>clear_logs</code> deleted the log file it was writing to.
+            """
+        ) }}
+    </div>
+{% endblock %}
+
+{% block bugs %}
+    <div class="doc-list">
+        {{ bug(
+            "One translation key per source string",
+            """
+                The translation key table is unique on the source string alone, not on the pair of
+                string and domain. If two domains declare the same source string, the second one writes
+                its messages against the first domain's key and never finds them again. Keep your keys
+                distinct across domains &mdash; the framework's own catalog uses screaming-snake keys
+                like <code>ERROR_TITLE</code> for exactly that reason.
+            """
+        ) }}
+
+        {{ bug(
+            "Rate limits answer with a 500",
+            """
+                The rate limit handler is installed without the limiter it reads its response headers
+                from, so a request that actually exceeds a limit raises inside the handler and comes back
+                as a 500 instead of a 429. Rate limiting itself works &mdash; the request <em>is</em>
+                rejected, just with the wrong status. Until this is released, catch
+                <code>RateLimitExceeded</code> yourself if the status code matters to your clients.
+            """
+        ) }}
+
+        {{ bug(
+            "SECURITY_CSRF_COOKIE_NAME is ignored",
+            """
+                The value is read from your config and then never used &mdash; both sides of the
+                double-submit check hardcode <code>csrf_token</code>. Setting a different name does not
+                break anything, it simply has no effect, so leave it at the default for now.
+            """
+        ) }}
+
+        {{ bug(
+            "An empty stylesheet link",
+            """
+                When <code>WF_TAILWIND</code> is on but a surface has no Tailwind entry point of its own,
+                the <code>frontend()</code> helper still emits a
+                <code>&lt;link rel=&quot;stylesheet&quot;&gt;</code> with an empty <code>href</code>, which
+                makes the browser fetch the page again as a stylesheet. Keep a raw stylesheet in the
+                surface's <code>static/css</code>, or leave <code>WF_TAILWIND</code> off for apps that do
+                not use it.
+            """
+        ) }}
+
+        {{ bug(
+            "Migrate template selection",
+            """
+                <code>wf migrate init</code> chooses the single- or multi-database template from
+                <code>SQLALCHEMY_BINDS</code> in your config. Binds attached at runtime through
+                <code>Model.set_bind</code> are not detected and need a manual template.
+            """
+        ) }}
+
+        {{ bug(
+            "Event backpressure",
+            """
+                Broadcasts use a bounded per-listener buffer sized by <code>EVENTS_EVENT_QUEUE_SIZE</code>.
+                A consumer that falls behind still loses its oldest events &mdash; it is logged as a
+                warning now instead of happening silently, but delivery stays best-effort either way.
+            """
+        ) }}
+
+        {{ bug(
+            "Hooks live in mix(), not in the lifespan",
+            """
+                Startup and shutdown hooks run from <code>fluid.mix()</code> rather than through the ASGI
+                lifespan protocol, so they do not run when an external ASGI server imports and serves
+                your app. Run your apps through <code>wf run</code> for now.
+            """
+        ) }}
+
+        {{ bug(
+            "Signals need a running loop",
+            """
+                <code>events.create_signal</code> and <code>events.event</code> have to be called from
+                inside the running event loop, because the broadcaster loop is created eagerly. Register
+                them from an enable hook or a startup hook, not at import time.
+            """
+        ) }}
+
+        {{ bug(
+            "Uncached translations still block",
+            """
+                A key you explicitly opted out of the cache is read through a synchronous session on the
+                <code>gettext</code> path. <code>agettext</code> offers a non-blocking alternative, but
+                the callables installed into Jinja stay synchronous on purpose.
+            """
+        ) }}
+
+        {{ bug(
+            "Hot reload across several frontends",
+            """
+                HMR across the main app and multiple Additive frontends works, but not always cleanly.
+                If a reload gets confused, restarting the dev run sorts it out.
+            """
+        ) }}
+    </div>
+{% endblock %}
+
+{% block breaks %}
+    <div class="doc-list">
+        {{ break(
+            "Relationships no longer load themselves",
+            """
+                Every model relationship in the security and babel extensions was audited against how the
+                framework actually reads it. Only <code>User.totp_secret</code> and
+                <code>User.webauthn_credentials</code> stay eager; everything else &mdash;
+                <code>User.roles</code>, <code>Role.permissions</code>, <code>User.identities</code>,
+                <code>User.backup_codes</code> and every reverse side &mdash; is
+                <code>lazy=&quot;raise_on_sql&quot;</code>. Reading <code>user.roles</code> in a handler or
+                template is the most likely thing to break; load it with <code>selectinload()</code> or a
+                separate query. The cascades are unchanged.
+            """
+        ) }}
+
+        {{ break(
+            "Renamed on the Fluid instance",
+            """
+                <code>app_root</code> is now <code>project_root</code> (the old name still works and
+                warns). <code>app_static</code> and <code>framework_static</code> became
+                <code>static_files</code>, <code>state.limiter</code> became <code>limit</code>, and
+                <code>static_prefixes</code> is an object with <code>add()</code> and
+                <code>matches()</code> instead of a set. <code>asgi_app</code> is gone entirely &mdash;
+                <code>PROXY_FIX</code> adds a normal middleware now.
+            """
+        ) }}
+
+        {{ break(
+            "Rendering a string",
+            """
+                <code>is_string</code> is gone. <code>fluid.render()</code> and
+                <code>additive.render()</code> no longer inspect it, so passing it now reaches the
+                template as an ordinary variable while your source string is looked up as a template
+                name. Use <code>fluid.render_string(source, ...)</code> instead.
+            """
+        ) }}
+
+        {{ break(
+            "Sending mail",
+            """
+                <code>mail.send_async(...)</code> is now <code>mail.asend(...)</code>, matching the
+                <code>a</code>-prefix every other async pair in the framework uses. The synchronous
+                <code>send</code> and both client context managers are unchanged.
+            """
+        ) }}
+
+        {{ break(
+            "Versions are packaging versions",
+            """
+                <code>FluidVersion</code> and <code>AdditiveVersion</code> are gone;
+                <code>webfluid.version()</code> and <code>Additive.version</code> hand you a
+                <code>packaging.version.Version</code> subclass built from <code>Version(*parts)</code>.
+                <code>Additive.version</code> is a plain attribute now, not a property, and
+                <code>check_required_version(..., &quot;wf&quot;)</code> became
+                <code>&quot;framework&quot;</code> &mdash; which is also the default.
+            """
+        ) }}
+
+        {{ break(
+            "The lifecycle API",
+            """
+                <code>HookPhase.add_hook</code> and <code>RequestPhase.add_processor</code> are one
+                <code>Phase.add</code>, and <code>Lifecycle.run_hooks()</code> split into
+                <code>run_startup()</code>, <code>run_shutdown()</code>, <code>run_before()</code> and
+                <code>run_after()</code>. The decorators on your app and your Additives are unchanged.
+            """
+        ) }}
+
+        {{ break(
+            "Config building",
+            """
+                <code>core.config.ConfigMeta</code> is gone and <code>build_config()</code> returns a
+                plain <code>dict</code>; configs are merged as dictionaries.
+                <code>DefaultConfig</code> is the single source of truth for every default, so
+                <code>fluid.config[&quot;KEY&quot;]</code> is always populated and consumers no longer
+                repeat defaults inline.
+            """
+        ) }}
+
+        {{ break(
+            "Constants and endpoints",
+            """
+                <code>WF_STATIC</code> is <code>FRAMEWORK_STATIC</code>, <code>WF_OCEAN</code> and
+                <code>OCEAN_AUTH</code> are <code>HUB_API</code> and <code>HUB_AUTH</code>, and
+                <code>FRAMEWORK_ROOT</code> moved to <code>core.identity</code>. The
+                <code>AUTH_API</code> environment variable is now <code>OCEAN_AUTH</code>. Internally,
+                <code>core.processing.error.add_exception_handler</code> became
+                <code>install_error_handler</code> and <code>core.fluid.middleware.http</code> became
+                <code>middleware.request</code>.
+            """
+        ) }}
+
+        {{ break(
+            "The app factory has a name",
+            """
+                The migration environment looks for <code>prepare_fluid()</code> in your
+                <code>main.py</code> (falling back to a module level <code>fluid</code>), and that is what
+                <code>wf create project</code> generates. If you carried an alpha project with a
+                <code>create_app()</code> factory, rename it.
+            """
+        ) }}
+
+        {{ break(
+            "Reaching request-scoped data",
+            """
+                <code>FluidContext.get_ctx_data</code> is gone. Use
+                <code>FluidContext.cached_or(key, factory)</code> for per-request memoisation, or read
+                the extension's own config.
+            """
+        ) }}
+    </div>
+{% endblock %}

@@ -1,0 +1,242 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import info, success %}
+
+{% block title %}Frontend Tooling — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Frontend</span>
+        <h1 class="doc-h1">Introduction</h1>
+        <p class="doc-lead">
+            Up to now everything we built lived on the server. WebFluid calls its frontend layer the
+            <strong>surface</strong>, and it is what turns a backend into a fullstack runtime. Before
+            we serve an actual frontend in the next chapter, let's get to know the tooling that sits
+            underneath it &mdash; and finally cash in on all that "magic behind the scenes" we kept
+            mentioning.
+        </p>
+
+        <h2>Batteries for the browser</h2>
+        <p>
+            The surface bundles two things you'd normally install by hand: a standalone
+            <strong>Node.js</strong> runtime and the <strong>Tailwind</strong> CLI. Neither ships
+            inside the package &mdash; they are downloaded on first use and cached, so the framework
+            can drive Vite and compile your CSS without you touching a global toolchain. If you
+            already have a system Node, WebFluid happily uses that instead.
+            <br><br>
+            You rarely call them directly, but when you need to, the CLI forwards straight through:
+        </p>
+
+        {{ code(
+            "terminal", "bash",
+            """# Run any node/npm command against the bundled runtime
+wf node node --version
+wf node npm --version
+
+# Run the Tailwind CLI directly
+wf tailwind -- --help"""
+        ) }}
+
+        <p>
+            Both commands forward the output of the underlying tool straight back to your terminal, so you
+            see exactly what node, npm or Tailwind printed.
+        </p>
+
+        <h2>The feature switches</h2>
+        <p>
+            Just like extensions, the surface features are optioned through switches &mdash; this time
+            in the <code>[features]</code> section of your app config:
+        </p>
+
+        {{ code(
+            "app_configs/app.ini", "ini",
+            """[general]
+SECRET_KEY = supersecret
+
+[features]
+WF_THEMES = 1
+WF_TAILWIND = 1
+WF_CHECK_FRONTEND = 0
+WF_BUILD_FRONTEND = 1
+WF_PROCESSING = 1"""
+        ) }}
+
+        <ul>
+            <li>
+                <code>WF_PROCESSING</code> &mdash; the heart of the surface. It injects a shared
+                template context, registers the default error pages, a request logger and small
+                framework endpoints (<code>/wf-identity</code> and <code>/url-for</code>).
+            </li>
+            <li>
+                <code>WF_TAILWIND</code> &mdash; compiles a <code>tailwind_raw.css</code> into a
+                minified <code>tailwind.css</code> for the framework and every app static folder on
+                startup.
+            </li>
+            <li>
+                <code>WF_THEMES</code> &mdash; enables swappable stylesheets and a light/dark client
+                helper. It also decides <em>which</em> raw stylesheet is compiled: with themes on the
+                framework looks for <code>tailwind_raw.css</code>, with themes off for
+                <code>tailwind_no_themes.css</code>.
+            </li>
+            <li>
+                <code>WF_CHECK_FRONTEND</code> and <code>WF_BUILD_FRONTEND</code> &mdash; type-check and
+                build your npm workspaces on startup. Both only matter for a Vite frontend in production;
+                in debug mode the dev server takes over and neither is read. We will come back to them in
+                the next chapter.
+            </li>
+        </ul>
+
+        <h2>Meet fluid_base.html</h2>
+        <p>
+            With processing enabled, the framework's own base template becomes useful. It ships inside
+            the package as <code>fluid_base.html</code>, already wired for themes, Tailwind, the
+            injected scripts and locale-aware text. Instead of hand-writing a full document like we did
+            in Getting Started, our page can now just extend it:
+        </p>
+
+        {{ code(
+            "fluid/templates/index.html", "html",
+            """{% extends &quot;fluid_base.html&quot; %}
+
+{% block title %}{{ _('Home') }}{% endblock %}
+
+{% block content %}
+    &lt;section&gt;
+        &lt;h1&gt;{{ _('Hello %(name)s!', name=name) }}&lt;/h1&gt;
+        &lt;p&gt;{{ _('Welcome to my liquified application.') }}&lt;/p&gt;
+    &lt;/section&gt;
+{% endblock %}"""
+        ) }}
+
+        <h3>Where the variables come from</h3>
+        <p>
+            Notice we never passed <code>theme</code>, <code>src</code> or <code>url_for</code> to the
+            template &mdash; yet <code>fluid_base.html</code> uses all of them. That is
+            <code>WF_PROCESSING</code> at work. It registers a context processor that adds, on every
+            render:
+        </p>
+        <ul>
+            <li><code>src</code> &mdash; the framework's client scripts (base, and the i18n / events clients when those extensions are on).</li>
+            <li><code>url_for</code> &mdash; a request-aware reverse url helper that returns paths.</li>
+            <li><code>theme</code> &mdash; the active theme stylesheet link (when WF_THEMES is on).</li>
+            <li><code>LANG</code>, <code>YEAR</code>, <code>id</code> &mdash; small conveniences for your markup.</li>
+            <li>the underscore gettext helper &mdash; even <strong>without</strong> Babel, processing installs a no-op fallback so <code>_()</code> always works.</li>
+        </ul>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            This is why the base template just works. The default error pages (errors/403, errors/404,
+            errors/500) come from the same place, so a 404 already renders a styled page out of the box.
+            We'll see exactly how all of these templates are found in the Template resolution chapter.
+        """) }}
+
+        <h2>Your scripts get a home</h2>
+        <p>
+            There is one more thing the base layout tidies up for us. All the way back, our hand-written
+            <code>index.html</code> carried its behaviour inline &mdash; the health check, and later the
+            model demo from the <a href="/v/{{ version }}/ext/sqlalchemy">SQLAlchemy</a> chapter, all lived
+            in a growing <code>&lt;script&gt;</code> block. Now that the framework owns the document, those
+            scripts move into <code>fluid/static/js</code>, and each page loads only the file it needs. The
+            app static folder is served at <code>/static</code> (reverse it with the <code>"static"</code>
+            route name), so the page just points at its script:
+        </p>
+
+        {{ code(
+            "fluid/templates/index.html", "html",
+            """{% block content %}
+    &lt;!-- ... your markup ... --&gt;
+
+    &lt;script src=&quot;{{ url_for('static', path='js/models.js') }}&quot;&gt;&lt;/script&gt;
+{% endblock %}"""
+        ) }}
+
+        <p>And the behaviour lives on its own, out of the template:</p>
+
+        {{ code(
+            "fluid/static/js/models.js", "javascript",
+            """function addModel() {
+    const value = document.getElementById('value')
+    const out = document.getElementById('newModel')
+
+    fetch('/my-model', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: value.value })
+    })
+        .then(res =&gt; res.json())
+        .then(data =&gt; { out.innerText = JSON.stringify(data) })
+}"""
+        ) }}
+
+        <p>
+            That is the same <code>fluid/static/js</code> folder <code>wf create project</code> lays down
+            for you, and the same place the events subscription from the
+            <a href="/v/{{ version }}/ext/events">Events</a> chapter belongs. Keeping one small file per
+            page means the browser only ever downloads the behaviour that page actually uses.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            Everything under a static mount is served with
+            <code>Cache-Control: public, max-age=31536000</code>, so a returning visitor fetches your
+            scripts once and never again. In debug mode <code>STATIC_MAX_AGE</code> drops to 0 and the
+            surface stamps a timestamp onto every asset url it renders, so you never chase a stale file
+            while you work.
+        """) }}
+
+        <h2>Styling with Tailwind</h2>
+        <p>
+            With <code>WF_TAILWIND</code> on, the framework looks for a <code>tailwind_raw.css</code>
+            in any <code>static/css</code> folder and compiles a minified <code>tailwind.css</code>
+            next to it on startup. So all you maintain is the raw entry point:
+        </p>
+
+        {{ code(
+            "fluid/static/css/tailwind_raw.css", "css",
+            '''@import "tailwindcss" source("../../");
+
+@theme {
+    /* your design tokens go here */
+}'''
+        ) }}
+
+        <p>
+            The compiled stylesheet is then linked for you through the <code>wf_tailwind</code> variable
+            that <code>fluid_base.html</code> already includes.
+        </p>
+
+        <h2>Themes</h2>
+        <p>
+            When <code>WF_THEMES</code> is enabled the framework registers its own theme and exposes a
+            tiny API on your fluid: <code>add_theme(name, link)</code> to register more,
+            <code>set_theme(request, name)</code> to remember a choice in the session, and
+            <code>get_theme()</code> to resolve the active one. Resolution walks from the session, to the
+            <code>GLOBAL_THEME</code> from your config, to the framework theme &mdash; so a visitor who
+            never picked anything still gets whatever you declared as the house style. On the client, the
+            injected <code>base.js</code> handles the light/dark preference via
+            <code>window.wf.switchTheme()</code>.
+        </p>
+
+        <p>
+            A theme is just a stylesheet link, and the one the framework ships derives its whole surface
+            from four tokens declared on <code>:root</code>: <code>--wf-blend</code> (the structural hue),
+            <code>--wf-deep</code>, <code>--wf-veil</code> and <code>--wf-sunk</code>, plus
+            <code>--wf-page</code> for the page gradient. Page and error backgrounds, the nav, the footer,
+            dropdowns, cards and traceback frames all read from those, and each of them falls back to the
+            neutral ramp. Which means a theme that only defines its colour scales already renders
+            coherently &mdash; you are not obliged to restyle every component to change the look.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ success("""
+            That's the surface groundwork. Processing gives our templates their context, Tailwind gives
+            them style, and the bundled Node runtime is standing by. Now let's actually serve a frontend.
+        """) }}
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/surface/frontend">Integration</a>.</p>
+    </article>
+{% endblock %}

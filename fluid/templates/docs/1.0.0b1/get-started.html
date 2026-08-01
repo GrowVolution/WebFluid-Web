@@ -1,0 +1,199 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import info %}
+
+{% block title %}Getting Started — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Introduction</span>
+        <h1 class="doc-h1">Getting Started</h1>
+        <p class="doc-lead">
+            This guide walks you through scaffolding your first WebFluid project, wiring up a
+            minimal route, and adding a touch of frontend. By the end you will have a running
+            app and a feel for how the pieces fit together.
+            <br><br>
+            Keep in mind that WebFluid has opinions and so it ships with conventions which we
+            will explain in detail later on.
+        </p>
+
+        <h2>Installation</h2>
+        <p>
+            Install the <code>webfluid</code> package from PyPI. The CLI <code>wf</code> ships
+            alongside it and is what you will use for every project task from here on.
+            <br><br>
+            Since this is a beta version, you will need to pin it to install it.
+        </p>
+
+        {{ code(
+            "terminal", "bash",
+            """pip install webfluid==1.0.0b1
+
+mkdir -p myapp/fluid/templates
+cd myapp
+mkdir app_configs"""
+        ) }}
+
+        <p class="mb-5">
+            This is the minimum required structure for this version to spin up your first minimal
+            fullstack application. For now, we did not use the frameworks CLI to keep this introduction
+            minimalistic and simple.
+        </p>
+
+        {{ info("<strong>Python 3.14 or newer</strong> is required. WebFluid is built using the
+                latest standards.") }}
+
+        <h2>Your first app</h2>
+        <p>
+            Fluid is a child of FastAPI. So setting up routes works exactly the same way.
+            The snippet below is a minimal service that serves a static HTML page and a health check.
+        </p>
+
+        {{ code(
+            "main.py", "python",
+            '''from webfluid import Fluid
+from fastapi.responses import HTMLResponse
+
+fluid = Fluid(__name__)
+
+
+@fluid.get("/", response_class=HTMLResponse)
+async def home():
+    return await fluid.render(
+        "index.html",
+        title="Hello World!",
+        name="my friend"
+    )
+
+
+@fluid.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
+if __name__ == "__main__":
+    fluid.mix()'''
+        ) }}
+
+        <h3>What you see</h3>
+        <p>
+            The snippet is looking like a mixture of Flask and FastAPI. But with one major difference:
+            Flask and FastAPI are designed to be minimalistic. Fluid is a fullstack runtime, and so there
+            is a lot of magic happening behind the scenes.
+            <br><br>
+            Nevertheless, it comes with a broad but optioned stack which allows you to decide how much
+            of the magic you really need.
+            <br><br>
+            Anyway, for now we won't go into detail about what is really happening here. We just want to get
+            you started. So let's continue setting up your app.
+        </p>
+
+        <h2>Adding a sprinkle of frontend</h2>
+        <p>
+            Now we have created a minimalistic app, which should render an <code>index.html</code>
+            template. Like Flask, Fluid is also using the Jinja2 templating engine. It has its
+            own <code>fluid.jinja_env</code>, and the major difference is the async environment
+            as well as the rendering utility that sits inside the class.
+            <br><br>
+            Another slight difference is the location of the app templates. Fluid is designed to
+            be abstracted and modular. So they are (as you may have already guessed looking at
+            the setup command chain) located inside the <code>fluid</code> directory:
+        </p>
+
+        {{ code(
+            "fluid/templates/index.html", "html",
+            """&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+    &lt;title&gt;{{ title }}&lt;/title&gt;
+
+    &lt;script&gt;
+        function healthCheck() {
+            const result = document.getElementById(&#39;result&#39;)
+            fetch(&#39;/health&#39;).then(res =&gt; {
+                if (res.ok) result.style.color = &#39;green&#39;
+                else result.style.color = &#39;red&#39;
+                return res.json()
+            }).then(data =&gt; {
+                result.innerText = JSON.stringify(data)
+                setTimeout(() =&gt; result.innerText = &#39;&#39;, 2000)
+            })
+        }
+    &lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;p&gt;Hello &lt;b&gt;{{ name }}&lt;/b&gt;!&lt;/p&gt;
+
+    &lt;button onclick=&quot;healthCheck()&quot;&gt;Health Check&lt;/button&gt;
+    &lt;p id=&quot;result&quot;&gt;&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;"""
+        ) }}
+
+        <h2>Set up your application</h2>
+        <p>
+            Now everything is set in place. But before you can run your application,
+            you will need to create an app config first. This is because WebFluid is
+            able to serve multiple apps with different configs and setups in just
+            one project directory.
+            <br><br>
+            Fluid requires only one config variable to run. And this is <code>SECRET_KEY</code>.
+            So creating your app is as simple as:
+        </p>
+
+        {{ code(
+            "terminal", "bash",
+            """cat <<'EOF' > app_configs/app.ini
+[general]
+SECRET_KEY = supersecret
+EOF"""
+        ) }}
+
+        <h2>Running your app</h2>
+        <p>
+            This is it. You can now run your app with the <code>wf run</code> command.
+            It just takes the name of your app config (which should be equal to the name
+            of your app) and parses your configuration as the apps' environment.
+        </p>
+
+        {{ code(
+                "terminal", "bash",
+                """user@host:~/myapp$ wf run app
+Starting application...
+[WF]    [2026-08-01 18:04:29 +0200] [INFO]      Mixing your WebFluid application.
+[WF]    [2026-08-01 18:04:29 +0200] [INFO]      Running startup hooks...
+[WF]    [2026-08-01 18:04:29 +0200] [INFO]      Server is listening on 127.0.0.1:8000."""
+        ) }}
+
+        <p>
+            Now you can access your app by opening <a href="http://localhost:8000">http://localhost:8000</a> in your browser.
+            <br><br>
+            Fluid sets up a SessionMiddleware when it gets initialized. Outside of debug mode its cookie is marked
+            as secure, so if you develop locally over plain http and rely on the session, run your app in debug mode
+            using the <code>-d</code> flag. Debug mode also turns on nicer error pages and more verbose logging.
+            We will take a closer look at configuring your app in the next chapter.
+        </p>
+
+        <h2>Next steps</h2>
+        <p>
+            With the basics in place, we can now dive below the surface of your fluid:
+        </p>
+        <ol class="mb-5">
+            <li>Read the <a href="/v/{{ version }}/config/app-config">configuration guide</a> to learn how to configure your apps.</li>
+            <li>Explore our <a href="/v/{{ version }}/ext/base">extension system</a> and the built-in batteries.</li>
+            <li>Discover the integrated <a href="/v/{{ version }}/surface/tooling">frontend tooling</a>
+                to release the full potential of your fluid.</li>
+            <li>Build portable modules using our <a href="/v/{{ version }}/additives/intro">Additive battery</a>.</li>
+            <li>Get to know the <a href="/v/{{ version }}/utils/lifecycle">framework utility</a> for more advanced stuff.</li>
+            <li>Skim the <a href="/v/{{ version }}/cli/wf">CLI reference</a> for everything the <code>wf</code> command can do.</li>
+        </ol>
+
+        {{ info("""
+            This documentation is written in order. So each chapter will build up on the previous ones.
+            If you want to get the best understanding of how to work with WebFluid we highly recommend
+            you to keep the project we created in this chapter and continue diving through the layers of
+            this documentation in order.
+        """) }}
+    </article>
+{% endblock %}

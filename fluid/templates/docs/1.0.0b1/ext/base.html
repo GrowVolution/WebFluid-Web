@@ -1,0 +1,249 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+
+{% block title %}Fluid Extensions — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Extensions</span>
+        <h1 class="doc-h1">Introduction</h1>
+        <p class="doc-lead">
+            Okay, let us introduce you to Fluid Extensions. They are inspired by Flask extensions
+            and meant to extend the functionality of WebFluid. (Who would have guessed :O)
+            <br><br>
+            Extensions should not provide endpoints, serve files or frontend and other things like
+            that. Instead, they can hook into the framework CLI or provide bundled functionality
+            to improve the developers' experience.
+        </p>
+
+        <h2>The base extension</h2>
+        <p>
+            All extensions of WebFluid should be children of the frameworks <code>FluidExtension</code>.
+            This is the base extension that provides the default structure of Fluid Extensions. So let's
+            take a look at how to create your own extensions:
+        </p>
+
+        <h2>Creating your first extension</h2>
+        <p>
+            At first, we need to set up your extension as a PyProject. This is necessary because the
+            <code>wf</code> CLI uses the entry-points API to load your extensions' command line interface.
+            WebFluid uses Typer as its command line tooling. If you are not familiar with Typer, you can
+            read more about it <a href="https://typer.tiangolo.com/">here</a>. We won't go into detail
+            about it.
+            <br><br>
+            Like we already said, we are building up on the current state of this documentation. So we are
+            assuming you do already have your project directory in place and continue working from inside it.
+        </p>
+
+        <h3>Setting up your PyProject</h3>
+        {{ code(
+            "terminal", "bash",
+            """mkdir -p myext/src/extension
+cd myext"""
+        ) }}
+
+        {{ code(
+            "myext/pyproject.toml", "toml",
+            '''[project]
+name = "extension"
+version = "1.0"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.entry-points."webfluid.extensions"]
+myext = "extension.main:MyExtension"'''
+        ) }}
+
+        <p>
+            This is a minimal example of what your PyProject could look like. There
+            are two things to take note of:
+        </p>
+        <ul>
+            <li>
+                We are using the entrypoint <code>"webfluid.extensions"</code>
+                to register your extension. The frameworks' CLI uses the name of your entrypoint
+                to register your extensions' CLI as a sub-cli of itself.
+            </li>
+            <li>
+                If you want to offer your own CLI, your extension <strong>must</strong> be
+                a child of the <code>FluidExtension</code> class.
+            </li>
+        </ul>
+
+        <h3>A minimal extension</h3>
+        <p>
+            Okay, let's start building your first extension. At first, we will just create
+            a quick hello world example for your CLI:
+        </p>
+
+        {{ code(
+            "myext/src/extension/main.py", "python",
+            '''from webfluid.extensions import FluidExtension
+import typer
+
+
+class MyExtension(FluidExtension):
+    _cli = typer.Typer(help="My first \'Hello World!\' example.")
+
+    @staticmethod
+    @_cli.command()
+    def hello(name: str):
+        typer.secho(
+            f"Hello {name} :)",
+            fg=typer.colors.GREEN, bold=True
+        )'''
+        ) }}
+
+        <p>
+            This is already it. Now you can install your extension as an editable package
+            and test your first command. You can do this by running:
+        </p>
+
+        {{ code(
+            "terminal", "bash",
+            '''pip install -e .
+wf myext hello "my friend"'''
+        ) }}
+
+        <h3>Expanding your fluid</h3>
+        <p>
+            Now that you have created your first cli command, we can start expanding your fluid.
+            Therefore, you can override the <code>FluidExtension.expand_fluid</code> method. There
+            you get passed in the fluid instance, and since extensions are meant to be registered before
+            <code>fluid.mix()</code>, you can do whatever you want with it. This includes registering
+            lifecycle hooks, which we will talk about in the "Framework utility" chapter.
+            <br><br>
+            Anyway, more important is that you will have access to the fluids' config dictionary that is
+            parsed when your app initializes (like we explained in the previous chapter). Your own keys are
+            not part of <code>DefaultConfig</code>, so this is the one place where a <code>get</code> with a
+            fallback is the right call. Let's combine what we've learned so far and extend our current setup:
+        </p>
+
+        {{ code(
+            "myext/src/extension/main.py", "python",
+            '''from webfluid.extensions import FluidExtension
+from typing import TYPE_CHECKING, Optional
+import typer
+
+if TYPE_CHECKING:
+    from webfluid import Fluid
+
+
+class MyExtension(FluidExtension):
+    _cli = typer.Typer(help="My first \'Hello World!\' example.")
+
+    # Stick with the parents\' signature so your IDE is happy
+    def __init__(self, fluid: Optional["Fluid"] = None, *_, **__):
+        self._foo = "default"
+        self._bar = "default"
+
+        super().__init__(fluid)
+
+    def expand_fluid(self, fluid: "Fluid", *_, **__):
+        self._foo = fluid.config.get("MYEXT_FOO", self._foo)
+        self._bar = fluid.config.get("MYEXT_BAR", self._bar)
+
+        fluid.jinja_env.globals["my_ext"] = self._my_util
+
+    def _my_util(self) -> str:
+        return f"Foo is {self._foo} but bar is {self._bar}!"
+
+    @staticmethod
+    @_cli.command()
+    def hello(name: str):
+        typer.secho(
+            f"Hello {name} :)",
+            fg=typer.colors.GREEN, bold=True
+        )'''
+        ) }}
+
+        {{ code(
+            "main.py", "python",
+            '''from webfluid import Fluid
+from webfluid.core.config import register_config
+from fastapi.responses import HTMLResponse
+
+from extension.main import MyExtension
+
+
+@register_config(10)
+class MyConfig:
+    SESSION_COOKIE_SECURE = True
+
+    MYEXT_BAR = "crazy"
+
+fluid = Fluid(__name__)
+
+# FluidExtension.__init__(fluid) calls expand_fluid on itself
+# automatically if fluid is not None.
+my_ext = MyExtension(fluid)
+
+
+@fluid.get("/", response_class=HTMLResponse)
+async def home():
+    return await fluid.render(
+        "index.html",
+        title="Hello World!",
+        name="my friend"
+    )
+
+
+@fluid.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
+if __name__ == "__main__":
+    fluid.mix()'''
+        ) }}
+
+        {{ code(
+            "fluid/templates/index.html", "html",
+            """&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+    &lt;title&gt;{{ title }}&lt;/title&gt;
+
+    &lt;script&gt;
+        function healthCheck() {
+            const result = document.getElementById(&#39;result&#39;)
+            fetch(&#39;/health&#39;).then(res =&gt; {
+                if (res.ok) result.style.color = &#39;green&#39;
+                else result.style.color = &#39;red&#39;
+                return res.json()
+            }).then(data =&gt; {
+                result.innerText = JSON.stringify(data)
+                setTimeout(() =&gt; result.innerText = &#39;&#39;, 2000)
+            })
+        }
+    &lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;p&gt;Hello &lt;b&gt;{{ name }}&lt;/b&gt;!&lt;/p&gt;
+
+    &lt;button onclick=&quot;healthCheck()&quot;&gt;Health Check&lt;/button&gt;
+    &lt;p id=&quot;result&quot;&gt;&lt;/p&gt;
+
+    &lt;p&gt;{{ my_ext() }}&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;"""
+        ) }}
+
+        <p>That's it for now. This is all you need to know about shipping your own extensions.</p>
+
+        <p>
+            When you are ready to share it, <code>wf ocean publish</code> uploads your extension to the Ocean
+            hub, and others can pull it into their project with <code>wf ocean install</code>. Have a look at the
+            <a href="/v/{{ version }}/cli/ocean">Ocean</a> chapter for the details.
+        </p>
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/ext/scheduling">Scheduling</a>.</p>
+    </article>
+{% endblock %}

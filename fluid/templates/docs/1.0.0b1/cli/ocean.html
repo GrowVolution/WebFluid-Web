@@ -1,0 +1,149 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import info, warning %}
+
+{% block title %}wf ocean — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">CLI</span>
+        <h1 class="doc-h1">Ocean</h1>
+        <p class="doc-lead">
+            Additives and extensions become really powerful once you can share them. The <strong>Ocean</strong>
+            is WebFluid's package hub, and <code>wf ocean</code> is the client that talks to it: search for
+            packages, install them into your project, and publish your own.
+        </p>
+
+        <h2>Logging in</h2>
+        <p>
+            Browsing and installing open-source packages works anonymously. Anything tied to an account
+            &mdash; paid packages you own, or publishing &mdash; needs a token. You generate one on the
+            Ocean and paste it into <code>wf ocean login</code>, which validates and stores it in
+            <code>~/.wf-ocean</code>. <code>wf ocean logout</code> removes it again.
+        </p>
+
+        {{ code(
+            "terminal", "bash",
+            """wf ocean login      # paste your Ocean token when prompted
+wf ocean logout     # forget the stored token"""
+        ) }}
+
+        <h2>Searching</h2>
+        <p>
+            <code>wf ocean search</code> takes an optional query and a few filters. Without any type flag
+            it searches additives, extensions and bundles alike:
+        </p>
+
+        {{ code(
+            "terminal", "bash",
+            """# Everything matching 'auth'
+wf ocean search auth
+
+# Only additives, open-source ones
+wf ocean search dashboard --additives --oss-only
+
+# Only extensions
+wf ocean search -e stripe"""
+        ) }}
+
+        <p>
+            The type flags are <code>--additives</code> / <code>-a</code>,
+            <code>--extensions</code> / <code>-e</code> and <code>--bundles</code> / <code>-b</code>;
+            <code>--oss-only</code> and <code>--paid-only</code> narrow by licensing. Packages print as a
+            table with each id, name, description, version, release date and price. Bundles get a table of
+            their own listing what is inside them, since a bundle is a priced set of packages rather than
+            a package.
+        </p>
+
+        <h2>Installing</h2>
+        <p>
+            <code>wf ocean install</code> pulls packages into your project. You name additives with
+            <code>--additive</code> / <code>-a</code> and extensions with <code>--extension</code> /
+            <code>-e</code>; both flags are repeatable and accept a pinned version with
+            <code>id==version</code>. Additives land in <code>additives/&lt;id&gt;</code>, extensions in
+            <code>extensions/&lt;id&gt;</code> (and are installed editable with pip):
+        </p>
+
+        {{ code(
+            "terminal", "bash",
+            """# One additive and one extension
+wf ocean install -a portal -e stripe
+
+# A pinned additive version
+wf ocean install -a portal==1.2.0
+
+# Resolve the latest prerelease instead of the stable channel
+wf ocean install -a portal --alpha"""
+        ) }}
+
+        <p>
+            By default install resolves the latest <strong>stable</strong> release. The
+            <code>--alpha</code>, <code>--beta</code> and <code>--rc</code> flags switch the channel when
+            you want a prerelease; naming more than one picks the most mature of them and says so.
+            Anything already present is skipped rather than overwritten, so re-running the command is
+            safe.
+        </p>
+
+        <p>
+            Once the download is unpacked, each installed additive runs the <code>install()</code> routine
+            from the <a href="/v/{{ version }}/additives/contract">Interaction</a> chapter: its own
+            required additives are resolved and pulled, its extract files land in your app and its pip
+            packages are installed. A dependency that has dependencies of its own is followed through, and
+            nothing is visited twice. So one <code>wf ocean install -a portal</code> can quietly bring in
+            the base it extends and the two additives it talks to.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            Paid packages require you to be logged in and to own them (you purchase them on the Ocean).
+            Because installing paid digital content starts its delivery, the CLI asks you to waive your
+            right of withdrawal before it downloads &mdash; open-source packages skip that entirely.
+        """) }}
+
+        <h2>Publishing</h2>
+        <p>
+            <code>wf ocean publish</code> uploads the package in your current directory. It figures out
+            what it is from the files it finds: a <code>manifest.json</code> makes it an additive, a
+            <code>pyproject.toml</code> makes it an extension. You must be logged in, and the package needs
+            an id (its manifest id, or the project name in <code>pyproject.toml</code>):
+        </p>
+
+        {{ code(
+            "terminal", "bash",
+            """cd additives/portal
+wf ocean publish"""
+        ) }}
+
+        <p>
+            Publish walks you through the rest interactively: which maintainer to publish as (your personal
+            account or one of your organisations), and the price &mdash; extensions must carry one,
+            additives may be free. It then builds an archive, uploads it with a SHA-256 checksum the hub
+            verifies, and reports the published id back to you. If the package has no license yet, it
+            searches the hub's license catalog with you, asks for whatever placeholders the license needs
+            (your name, the year) and applies it.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            The archive is built from your working directory, minus the obvious junk (<code>.git</code>,
+            <code>__pycache__</code>, <code>node_modules</code>, editor folders, compiled files) and minus
+            everything your <code>.gitignore</code> excludes &mdash; nested ones included, negations
+            honoured. So the <code>.gitignore</code> that <code>wf create additive</code> writes for you is
+            doing double duty: it keeps your repository clean and it decides what ships.
+        """) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            The <code>wf ocean</code> client targets the public Ocean at ocean.webfluid.dev by default. If
+            you run your own hub, point it elsewhere with the <code>OCEAN_API</code> and
+            <code>OCEAN_AUTH</code> environment variables. (<code>AUTH_API</code> was the alpha spelling
+            of the second one and is no longer read.)
+        """) }}
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with the <a href="/v/{{ version }}/ref">Reference overview</a>.</p>
+    </article>
+{% endblock %}

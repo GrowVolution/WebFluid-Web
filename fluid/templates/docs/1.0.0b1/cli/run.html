@@ -1,0 +1,111 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import info, warning %}
+
+{% block title %}wf run — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">CLI</span>
+        <h1 class="doc-h1">Run</h1>
+        <p class="doc-lead">
+            The very first thing you did in this guide was <code>wf run app</code>. Now that you've seen
+            the whole stack, here's what that command actually arranges &mdash; and the few flags that
+            change how your app comes up.
+        </p>
+
+        <h2>What run does</h2>
+        <p>
+            <code>wf run &lt;app&gt;</code> takes the name of an app config, reads
+            <code>app_configs/&lt;app&gt;.ini</code> into the environment, sets a handful of runtime
+            variables (the app name, host, port, log level) and launches your <code>main.py</code> as a
+            child process. It streams the app's output to your console while the app itself writes a plain
+            copy into a timestamped log file under <code>logs/&lt;app&gt;/</code>. Both an app config and a
+            <code>main.py</code> have to exist, otherwise it tells you to create them first.
+            <br><br>
+            It also hands the child the things a terminal application needs to know about the terminal it
+            is not attached to: the console width and height, and your console encoding. That is why a
+            progress bar inside your app &mdash; the startup phase bars, a <code>tqdm</code> loop of your
+            own &mdash; comes out the right width and redraws in place instead of scrolling one line per
+            frame. Redirect the output to a file and the bars degrade to plain ASCII rather than failing
+            to encode.
+        </p>
+
+        <p>
+            Two conveniences happen while the config is read in. Any key ending in <code>_FILE</code> is
+            treated as a path: the file is read and its contents are exposed under the key without the
+            suffix &mdash; handy for Docker style secrets. And a <code>[dev]</code> section is only applied
+            when you pass <code>-d</code>, so development-only overrides never leak into a normal run.
+        </p>
+
+        <h2>The flags</h2>
+        <ul>
+            <li><code>--host</code> / <code>-h</code> &mdash; bind host. Default <strong>127.0.0.1</strong>.</li>
+            <li><code>--port</code> / <code>-p</code> &mdash; bind port. Default <strong>8000</strong>.</li>
+            <li><code>--loglevel</code> / <code>-l</code> &mdash; log verbosity (passed through to the log session). Default <strong>info</strong>.</li>
+            <li><code>--debug</code> / <code>-d</code> &mdash; run in debug mode.</li>
+            <li><code>--interactive</code> / <code>-i</code> &mdash; run with the interactive control menu.</li>
+        </ul>
+
+        {{ code(
+            "terminal", "bash",
+            """# Plain run on a custom port
+wf run app -p 9000
+
+# Debug mode with verbose logging
+wf run app -d -l debug"""
+        ) }}
+
+        <h2>Debug mode</h2>
+        <p>
+            The <code>-d</code> flag is what lights up the frontend developer experience. In debug mode
+            the framework starts the Vite dev server, proxies it for hot module replacement, and rewrites
+            your pages to pull assets from it &mdash; everything we described in the Frontend chapters.
+            It also relaxes the secure session cookie (so the session survives plain http) and swaps the
+            generic error page for a detailed debug traceback.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            Debug mode is not compatible with port 5173 &mdash; that one is reserved for the Vite dev
+            server it manages for you. Pick any other port and you're fine.
+        """) }}
+
+        <h2>Interactive mode</h2>
+        <p>
+            With <code>-i</code>, instead of streaming straight to your terminal, <code>run</code> drops
+            you into a small control menu &mdash; restart, stop, start, join the live log (leave it again
+            with <code>ESC</code>), clear the log folder, clear the console. It asks for host, port and
+            debug up front if you didn't pass them. It's handy for babysitting a long-lived process during
+            development, and it behaves the same on Windows as on POSIX systems.
+        </p>
+
+        <p>
+            The application's output is read continuously whether or not you are watching it, so muting
+            the stream by returning to the menu never blocks the app on a full pipe, and joining the log
+            again picks up from wherever it is. When you stop the app, the reader is drained before the
+            closing message &mdash; so the shutdown hooks you wrote in the
+            <a href="/v/{{ version }}/utils/lifecycle">Lifecycle</a> chapter print where they happened,
+            not after the goodbye.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            A plain (non-interactive) run forwards SIGINT and SIGTERM for you, so a clean Ctrl+C triggers
+            the graceful shutdown sequence from the Lifecycle chapter: in-flight request finishes,
+            shutdown hooks run, process exits.
+        """) }}
+
+        <h2>That's the tour</h2>
+        <p>
+            From a single <code>main.py</code> to a fullstack runtime with batteries, modules and a
+            managed frontend &mdash; and a CLI that scaffolds and runs the lot. You now have the whole
+            map. For the precise surface of every class and function, the Reference is next.
+        </p>
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/cli/ocean">Ocean</a>.</p>
+    </article>
+{% endblock %}

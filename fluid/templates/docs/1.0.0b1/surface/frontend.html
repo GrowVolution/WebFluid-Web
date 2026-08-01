@@ -1,0 +1,218 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import info, warning %}
+
+{% block title %}Frontend Integration — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Frontend</span>
+        <h1 class="doc-h1">Integration</h1>
+        <p class="doc-lead">
+            A WebFluid app declares what kind of frontend it serves through a single config value:
+            <code>APP_FRONTEND</code>. There are three flavours &mdash; plain server-rendered,
+            htmx-enhanced, or a full Vite-driven SPA. We'll start with the small end and only serve the
+            main app, then get fancy with multiple frontends once we reach Additives.
+        </p>
+
+        <h2>The frontend config</h2>
+        <p>
+            <code>APP_FRONTEND</code> is just a dictionary in your config class. Its <code>type</code>
+            decides everything else:
+        </p>
+        <ul>
+            <li><code>none</code> &mdash; pure SSR, no client tooling.</li>
+            <li><code>htmx</code> &mdash; SSR plus htmx (and optionally Alpine) injected for you.</li>
+            <li><code>vite</code> &mdash; a real Vite app served and hot-reloaded by the framework.</li>
+        </ul>
+
+        <h2>The easy win: htmx</h2>
+        <p>
+            The lightest frontend needs no Node at all. Declare the htmx type and the framework hands
+            your templates a <code>frontend()</code> helper that injects the right scripts (and the
+            compiled Tailwind link):
+        </p>
+
+        {{ code(
+            "fluid/config.py", "python",
+            '''from webfluid.core.config import register_config
+
+
+@register_config(10)
+class MyConfig:
+    SESSION_COOKIE_SECURE = True
+
+    APP_FRONTEND = {
+        "type": "htmx",
+        "alpine": True
+    }'''
+        ) }}
+
+        {{ code(
+            "fluid/templates/index.html", "html",
+            """{% extends &quot;fluid_base.html&quot; %}
+
+{% block head %}
+    {{ frontend() if frontend else &quot;&quot; }}
+{% endblock %}
+
+{% block content %}
+    &lt;button hx-get=&quot;/health&quot; hx-target=&quot;#out&quot;&gt;{{ _('Ping') }}&lt;/button&gt;
+    &lt;pre id=&quot;out&quot;&gt;&lt;/pre&gt;
+{% endblock %}"""
+        ) }}
+
+        <p>
+            That is genuinely the whole story for an htmx app. The <code>frontend()</code> call resolves
+            to the htmx (and Alpine) script tags, and because we are extending
+            <code>fluid_base.html</code>, everything else is already in place.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            The <code>frontend()</code> helper looks for a raw stylesheet in that surface's
+            <code>static/css</code> &mdash; <code>tailwind_raw.css</code> with themes enabled,
+            <code>tailwind_no_themes.css</code> without. If it finds neither while
+            <code>WF_TAILWIND</code> is on, it still writes a stylesheet link, but with an empty
+            <code>href</code>, and your browser fetches the page a second time trying to parse it as CSS.
+            Keep a raw stylesheet next to every surface that calls <code>frontend()</code>, or switch
+            <code>WF_TAILWIND</code> off for apps that do not style anything.
+        """) }}
+
+        <h2>Going SPA: the fluid/frontend workspace</h2>
+        <p>
+            For a richer client you switch to the <code>vite</code> type. The main app's frontend lives
+            in one place the framework knows to look for: a <code>fluid/frontend</code> directory, set
+            up as an npm <strong>workspace</strong>. Three pieces make that work:
+        </p>
+        <ol>
+            <li>a root <code>package.json</code> that declares the workspace,</li>
+            <li>a root <code>vite.config.js</code> that orchestrates it (the framework writes this one for you),</li>
+            <li>the actual Vite app inside <code>fluid/frontend</code>.</li>
+        </ol>
+
+        <p>
+            For now we only have the main app, so the workspace list is tiny &mdash; just our one
+            frontend. (We'll add <code>additives/*/frontend</code> to it later.)
+        </p>
+
+        {{ code(
+            "package.json", "json",
+            '''{
+  "name": "myapp",
+  "private": true,
+  "workspaces": [
+    "fluid/frontend"
+  ],
+  "devDependencies": {
+    "vite": "^8.0.0"
+  }
+}'''
+        ) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            You do not hand-write the root vite.config.js. The framework ships an orchestrator that
+            discovers every workspace, merges their configs and adds the dev plugin that resolves your
+            assets. We'll leave that machine in its box here and only touch the small per-app config.
+        """) }}
+
+        <p>
+            Inside <code>fluid/frontend</code> you have an ordinary Vite project. The one thing the
+            framework needs from its config is the right <code>base</code>: the built assets are served
+            under <code>/frontend/</code>, while in development everything is proxied through
+            <code>/vite-dev/</code>:
+        </p>
+
+        {{ code(
+            "fluid/frontend/vite.config.js", "js",
+            """import { defineConfig } from 'vite'
+
+export default defineConfig(({ command }) =&gt; ({
+  base: command === 'build' ? '/frontend/' : '/vite-dev/',
+}))"""
+        ) }}
+
+        <p>
+            Tell the config which app this is and declare your <code>APP_FRONTEND</code>:
+        </p>
+
+        {{ code(
+            "fluid/config.py", "python",
+            '''@register_config(10)
+class MyConfig:
+    APP_FRONTEND = {
+        "type": "vite",
+        "framework": "react",
+        "typescript": False,
+        "register_index": True
+    }'''
+        ) }}
+
+        <h2>How it gets served</h2>
+        <p>
+            When the type is <code>vite</code>, the framework takes over the <code>/</code> route and
+            serves your Vite app's index for you &mdash; you don't register a home handler at all. That is
+            the default (<code>register_index: true</code>); set <code>register_index: false</code> in your
+            <code>APP_FRONTEND</code> if you would rather own the <code>/</code> route yourself.
+            What happens behind that route depends on the mode:
+        </p>
+        <ul>
+            <li>
+                <strong>Development</strong> (<code>wf run app -d</code>): the bundled Node starts the
+                Vite dev server, and the framework proxies it under <code>/vite-dev/</code>. You get
+                hot module replacement for free, rewritten into your page on the fly.
+            </li>
+            <li>
+                <strong>Production</strong> (no <code>-d</code>): the workspaces are built once on
+                startup and the resulting <code>dist</code> is mounted as static files under
+                <code>/frontend</code>.
+            </li>
+        </ul>
+
+        <h3>Deciding what happens on a production boot</h3>
+        <p>
+            That build step is where the two remaining feature switches earn their keep. On a production
+            start the framework runs, in order:
+        </p>
+        <ul>
+            <li>
+                <code>WF_CHECK_FRONTEND</code> &mdash; <code>npm run check --workspaces</code>. The
+                scaffolder wires this script up for TypeScript templates, so a type error stops the boot
+                instead of shipping. Off by default.
+            </li>
+            <li>
+                <code>WF_BUILD_FRONTEND</code> &mdash; <code>npm run build --workspaces</code>, and a
+                failing build aborts startup with the compiler output. On by default.
+            </li>
+        </ul>
+
+        <p>
+            Both are worth turning off in an image that already built its assets at container build time
+            &mdash; there is no reason to compile the same bundle again on every restart, and a container
+            without a Node toolchain cannot anyway. The <code>dist</code> folders are mounted either way.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            The <code>register_index</code> flag decides whether the framework takes the <code>/</code>
+            route for you. It defaults to true, and <code>wf create project</code> asks about it when you
+            pick the Vite type. Set it to false and the Vite index is still served &mdash; you just have to
+            wire the route yourself, which is what you want as soon as the SPA is not the front page.
+        """) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            Setting all of this up by hand is fiddly, and that is by design: it is exactly the kind of
+            boilerplate the CLI exists to remove. When we reach wf create project you'll see this whole
+            workspace generated in one command. Here it is enough to understand the moving parts.
+        """) }}
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/surface/jinja">Template resolution</a>.</p>
+    </article>
+{% endblock %}
