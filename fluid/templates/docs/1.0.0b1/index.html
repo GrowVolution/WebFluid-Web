@@ -238,6 +238,15 @@
         ) }}
 
         {{ bug(
+            "wf migrate init crashes",
+            """
+                A <code>NameError</code>, every time. The helper class it builds internally shadows
+                <code>project_root</code> in its own body before Python can resolve it. No workaround
+                besides patching <code>migrate.py</code> &mdash; fixed next release.
+            """
+        ) }}
+
+        {{ bug(
             "Migrate template selection",
             """
                 <code>wf migrate init</code> chooses the single- or multi-database template from

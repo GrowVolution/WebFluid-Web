@@ -1,6 +1,6 @@
 {% extends "docs/base.html" %}
 {% from "docs/partials/_code.html" import code %}
-{% from "docs/partials/_callout.html" import info %}
+{% from "docs/partials/_callout.html" import info, danger %}
 
 {% block title %}Migrate — WebFluid Docs{% endblock %}
 
@@ -251,6 +251,17 @@ wf run app2"""
             revision contains your tables and the tables of the Additives you actually switched on &mdash;
             not everything that happens to sit in your <code>additives</code> directory.
         </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ danger("""
+            <code>wf migrate init</code> crashes with a <code>NameError</code> in this release. It builds a
+            throwaway class to hand your config class the <code>project_root</code> it asked for, and that
+            class's body is written as <code>project_root = project_root</code> &mdash; Python resolves the
+            right-hand side against the class's own, still-empty namespace instead of the enclosing
+            function, so the name is never found. There is no workaround short of patching
+            <code>migrate.py</code> yourself; the fix ships in the next release.
+        """) }}
 
         <span class="my-5">&nbsp;</span>
 
