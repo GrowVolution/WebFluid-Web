@@ -1,0 +1,172 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import info, success, warning %}
+
+{% block title %}wf create — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">CLI</span>
+        <h1 class="doc-h1">Create</h1>
+        <p class="doc-lead">
+            This is the chapter the whole guide has been quietly building toward. Every structure we
+            assembled by hand &mdash; the config, the routers, the models, the services, the frontend
+            workspace &mdash; is what a single <code>wf create project</code> lays on the table in one
+            go. Let's meet it.
+        </p>
+
+        <h2>wf create project</h2>
+        <p>
+            One command scaffolds a complete, opinionated project and walks you through the frontend
+            choice interactively:
+        </p>
+
+        {{ code(
+            "terminal", "bash",
+            """wf create project myapp"""
+        ) }}
+
+        <p>And out comes the shape we've been converging on all along:</p>
+
+        {{ code(
+            "myapp/", "text",
+            '''myapp/
+├── main.py                 # prepare_fluid(), includes the routers
+├── package.json            # the npm workspace
+├── vite.config.js          # the orchestrator, written for you
+├── .gitignore
+├── additives/              # your Additives live here
+└── fluid/
+    ├── config.py           # register_config Config (APP_CONFIG, APP_FRONTEND)
+    ├── api/
+    │   ├── __init__.py      # api_router (prefix /api)
+    │   ├── health.py        # a ready-made health handler
+    │   └── v1/
+    │       └── __init__.py  # v1 router (prefix /v1)
+    ├── app/                 # HTML routes (index.py) — for htmx / none
+    ├── frontend/            # Vite workspace — for the vite type
+    ├── models/              # SQLAlchemy models
+    ├── schemas/             # pydantic schemas
+    ├── services/            # business logic
+    ├── events/              # event + query handlers
+    ├── utils/               # your helpers
+    ├── static/
+    │   ├── css/tailwind_raw.css
+    │   ├── img/
+    │   └── js/
+    └── templates/
+        └── index.html       # extends fluid_base.html'''
+        ) }}
+
+        <p>
+            If that layout looks familiar, it should &mdash; you've built every part of it across the
+            last chapters:
+        </p>
+        <ul>
+            <li><code>main.py</code> is the app factory we adopted back in the Migrate chapter, under the name Migrate looks for: <code>prepare_fluid</code>.</li>
+            <li><code>fluid/config.py</code> is the config class with <code>APP_CONFIG</code> and <code>APP_FRONTEND</code>.</li>
+            <li><code>fluid/api</code> and <code>fluid/app</code> are the JSON and HTML routers, split out cleanly.</li>
+            <li><code>fluid/models</code>, <code>schemas</code>, <code>services</code>, <code>events</code>, <code>utils</code> are the homes we kept reaching for as the app grew.</li>
+            <li><code>fluid/frontend</code>, the workspace <code>package.json</code> and the Tailwind entry point are the surface we wired up by hand.</li>
+        </ul>
+
+        <h3>A config that survives a public repo</h3>
+        <p>
+            One small convention comes with the generated config, and it is worth adopting. The
+            <code>Config</code> class inherits from a <code>MyConfig</code> that the framework tries to
+            import from <code>fluid/_my_config.py</code> &mdash; and falls back to an empty class when
+            there is none. That file is in the generated <code>.gitignore</code>:
+        </p>
+
+        {{ code(
+            "fluid/config.py", "python",
+            '''from webfluid.core.config import register_config
+
+# The MyConfig class is our convention for developing public git repos.
+try: from fluid._my_config import MyConfig
+except ImportError:
+    class MyConfig: pass
+
+@register_config(10)
+class Config(MyConfig):
+    APP_CONFIG = {
+        "title": "myapp",
+        "version": "1.0.0"
+    }
+    APP_FRONTEND = { "type": "htmx", "alpine": True }'''
+        ) }}
+
+        <p>
+            So the settings everyone shares live in <code>config.py</code> and go into git, while anything
+            local or private lives in <code>_my_config.py</code> and never does. No second config
+            mechanism is involved &mdash; the config builder simply walks the class hierarchy, so a key
+            only <code>MyConfig</code> defines is picked up as if it had been written in
+            <code>Config</code>. Keys that appear in both belong to <code>Config</code>: the subclass
+            wins, as it would anywhere else in Python. Clone the repo without that file and the app still
+            starts.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            The frontend type you pick decides two details: choose vite and you get the fluid/frontend
+            workspace (the app/ folder is dropped, since the Vite index owns / unless you answered no to
+            register_index); choose htmx or none and you get the app/index.py HTML route with a ready
+            index.html instead. Useful flags: --skip-defaults, --skip-frontend and --babel-fallback.
+        """) }}
+
+        <h2>wf create app</h2>
+        <p>
+            A project can serve many apps, and each app is just a config. <code>wf create app</code>
+            builds one interactively &mdash; it generates a secret, asks for your database and redis
+            uris, and lets you tick the extensions, features and Additives to enable. It even pulls in
+            any questions your Additives contribute through their <code>configure</code> setup:
+        </p>
+
+        {{ code(
+            "terminal", "bash",
+            """wf create app prod"""
+        ) }}
+
+        <p>
+            The result is a fully populated <code>app_configs/prod.ini</code> &mdash; the same kind of
+            file we hand-wrote in Getting Started, only now filled in for you with a real secret key and
+            every switch in place.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            Everything else the scaffolders write is explicitly UTF-8; the app config is the one file that
+            is still written and read back in the interpreter's locale encoding. On one machine that is
+            symmetric and invisible. It stops being either the moment a config carrying a non-ASCII value
+            &mdash; a mail username, a password with an umlaut &mdash; is generated on a Windows console
+            and read somewhere else. Keep those values ASCII, or point at them through a <code>*_FILE</code>
+            key, which is resolved from disk rather than from the ini.
+        """) }}
+
+        <h2>wf create additive</h2>
+        <p>
+            And the third scaffolder closes the loop on the Additives chapters.
+            <code>wf create additive</code> asks for an id, a version format, whether it's a base or
+            should extend one, its frontend, and which extensions it requires &mdash; then writes the
+            whole package, manifest and all:
+        </p>
+
+        {{ code(
+            "terminal", "bash",
+            """wf create additive portal"""
+        ) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ success("""
+            That's the payoff of the red thread: the framework's conventions aren't a cage, they're a
+            destination. You can build every piece by hand &mdash; and now that you understand each one,
+            you can let the CLI lay them down for you and get straight to the interesting part.
+        """) }}
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/cli/run">Run</a>.</p>
+    </article>
+{% endblock %}

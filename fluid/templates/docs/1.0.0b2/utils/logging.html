@@ -1,0 +1,94 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import info %}
+
+{% block title %}Logging — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Framework utility</span>
+        <h1 class="doc-h1">Logging</h1>
+        <p class="doc-lead">
+            Those tidy, coloured <code>[WF]</code> lines you've seen since the very first
+            <code>wf run</code> come from the framework's log factory. It's a small shared logger you can
+            write to as well, so your messages sit right alongside the framework's in the same format and
+            the same files.
+        </p>
+
+        <h2>Writing to the log</h2>
+        <p>
+            Grab the factory and log at the level you need. The API is what you'd expect &mdash;
+            <code>log</code> (info), <code>debug</code>, <code>warning</code>, <code>error</code>,
+            <code>critical</code> &mdash; plus an <code>exception</code> helper that formats a traceback
+            for you:
+        </p>
+
+        {{ code(
+            "fluid/services/notify.py", "python",
+            '''from webfluid.utils.logging import factory as log
+
+
+def welcome(address: str, value: str):
+    try:
+        # ... send the mail ...
+        log.log(f"Welcome mail queued for {address}.")
+    except Exception as e:
+        log.exception(e, "Failed to queue welcome mail.")'''
+        ) }}
+
+        <p>
+            Each line is rendered as <code>[WF] [timestamp] [LEVEL] message</code>, coloured by level on
+            the console. <code>exception</code> takes the caught error and an optional message, and
+            appends the full traceback at error level.
+        </p>
+
+        <h2>It only speaks during execution</h2>
+        <p>
+            The factory stays quiet unless your app is actually being run by the CLI. Concretely, it logs
+            only when the <code>IN_EXECUTION</code> flag is set &mdash; which <code>wf run</code> sets for
+            you. That's why importing your modules, scaffolding, or running migration commands doesn't
+            spam framework log lines: there's no live session to log into.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            The verbosity follows the LOG_LEVEL the CLI passes through. wf run app -l debug surfaces the
+            debug lines; the default is info. You don't configure handlers yourself &mdash; the session
+            is set up when the app starts.
+        """) }}
+
+        <h2>Where the lines go</h2>
+        <p>
+            Every line is written twice: once coloured to your console, and once plain into a timestamped
+            file under <code>logs/&lt;app&gt;/</code>. So each run keeps its own record, readable without
+            a terminal that understands escape codes:
+        </p>
+
+        {{ code(
+            "logs/", "text",
+            '''logs/
+└── app/
+    ├── 2026-07-28_18-04-29.log
+    └── 2026-07-28_19-11-02.log'''
+        ) }}
+
+        <p>
+            The interactive runner's "clear log folder" option prunes that directory but always keeps the
+            file the current run is writing to, so clearing your history mid-session never costs you the
+            session you are in.
+        </p>
+
+        <h2>Additive-aware logging</h2>
+        <p>
+            There's one nice touch for modular apps: anything logged from within an Additive is routed
+            through a dedicated <code>webfluid.additives</code> logger. The framework wraps Additive
+            routes and hooks in that context automatically, so when you call the same factory from inside
+            an Additive, its lines are attributed to the Additive rather than the host app &mdash; no
+            extra work on your side.
+        </p>
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with the <a href="/v/{{ version }}/cli/wf">CLI</a>.</p>
+    </article>
+{% endblock %}

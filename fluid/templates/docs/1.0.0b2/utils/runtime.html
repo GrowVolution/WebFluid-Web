@@ -1,0 +1,202 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import info, warning %}
+
+{% block title %}Runtime — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Framework utility</span>
+        <h1 class="doc-h1">Runtime</h1>
+        <p class="doc-lead">
+            Between booting and shutting down, your app spends its life handling requests. WebFluid wraps
+            each one in a <strong>context</strong> and gives you a handful of hooks to shape the request
+            on its way in and the response on its way out. This is the layer that makes
+            <code>render</code>, <code>url_for</code> and friends "just know" about the current request.
+        </p>
+
+        <h2>The request context</h2>
+        <p>
+            On every request the framework enters a <code>FluidContext</code>. From anywhere downstream
+            &mdash; a route, a service, an event handler &mdash; you can grab it with
+            <code>FluidContext.current()</code> to reach the active app and request without threading
+            them through every function call. It's the same pattern our generated routes use:
+        </p>
+
+        {{ code(
+            "fluid/app/index.py", "python",
+            '''from webfluid.core.context import FluidContext
+
+
+async def handle_request():
+    ctx = FluidContext.current()
+    user = ctx.request.session.get("user")
+    return await ctx.fluid.render("index.html", user=user)'''
+        ) }}
+
+        <p>
+            Outside of a request there is no context, and that is a case worth handling rather than
+            hoping about &mdash; a scheduled job, a startup hook and an event handler all run without one.
+            Two accessors let you choose how loudly to fail:
+        </p>
+        <ul>
+            <li>
+                <code>FluidContext.current()</code> &mdash; the context, or a <code>RuntimeError</code>.
+                Use it where a request is genuinely required.
+            </li>
+            <li>
+                <code>FluidContext.try_current()</code> &mdash; the context, or <code>None</code>. This is
+                what the framework's own helpers use, so they can fall back to a default instead of
+                raising in a background job.
+            </li>
+        </ul>
+
+        <p>
+            The context is also a scratchpad for the current request. It behaves like a dict
+            (<code>ctx["key"]</code>, <code>get</code>, <code>pop</code>), and
+            <code>FluidContext.cached_or(key, factory)</code> memoises a value for the rest of the
+            request &mdash; calling the factory directly when there is no context at all. That is how the
+            active locale is parsed once per request instead of once per translated string, and it works
+            just as well for anything of yours that is expensive and stable within a request.
+        </p>
+
+        {{ code(
+            "example", "python",
+            '''from webfluid.core.context import FluidContext
+
+
+def pricing_tier():
+    # Computed at most once per request, and computed every time
+    # when called from a job that has no request at all.
+    return FluidContext.cached_or("pricing_tier", _resolve_tier)'''
+        ) }}
+
+        <h2>Shaping requests and responses</h2>
+        <p>
+            Three decorators let you step into the request flow, all running inside that context:
+        </p>
+        <ul>
+            <li>
+                <code>before_request</code> &mdash; runs before the route. Return nothing to continue,
+                or return a response to short-circuit the request entirely.
+            </li>
+            <li>
+                <code>after_request</code> &mdash; receives the response and returns one (possibly a new
+                one). Great for headers or post-processing.
+            </li>
+            <li>
+                <code>context_processor</code> &mdash; returns a dict that is merged into every
+                <code>render</code>, so shared template variables don't have to be passed by hand.
+            </li>
+        </ul>
+
+        {{ code(
+            "fluid/runtime.py", "python",
+            '''from webfluid.core.context import FluidContext
+
+
+def register(app):
+
+    @app.before_request
+    def require_session():
+        ctx = FluidContext.current()
+        if ctx.request.url.path.startswith("/admin"):
+            if not ctx.request.session.get("user"):
+                from fastapi.responses import RedirectResponse
+                return RedirectResponse("/login")
+
+    @app.after_request
+    async def add_header(response):
+        response.headers["X-Powered-By"] = "WebFluid"
+        return response
+
+    @app.context_processor
+    def globals_():
+        return {"brand": "My Portal"}'''
+        ) }}
+
+        <p>
+            This is exactly how the surface's processing layer works internally &mdash; it registers a
+            context processor for the shared template variables, a before-request logger and an
+            after-request hook that swaps in the styled error pages. Additives get their own scoped
+            versions of all three, as we saw in the previous chapter.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            There is a cost worth knowing about: as soon as a single <code>after_request</code> processor
+            is registered, the response body has to be buffered so the processor can see it. Requests are
+            passed straight through when there is none &mdash; but a processor that only ever sets a
+            header is still cheaper than one that inspects the body.
+        """) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            Two limits of that buffering. A streaming response is detected the moment the app announces
+            more body to come and released unbuffered, which means it never reaches your
+            <code>after_request</code> processors at all. And a buffered response carries the headers the
+            app produced, <code>Content-Length</code> among them &mdash; so return a new response when you
+            change the body rather than rewriting the one you were handed.
+        """) }}
+
+        <h2>Themes at runtime</h2>
+        <p>
+            With <code>WF_THEMES</code> enabled, theme selection is a request-time decision. You remember
+            a choice in the session and read the active one back when rendering:
+        </p>
+
+        {{ code(
+            "example", "python",
+            '''from fastapi import Request
+
+
+async def pick_theme(request: Request):
+    ctx = FluidContext.current()
+    ctx.fluid.set_theme(request, "ocean")   # stored in the session
+    return await ctx.fluid.render("index.html")'''
+        ) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            <code>set_theme</code> only accepts a theme you registered with <code>add_theme</code> and
+            raises otherwise, so a typo is an error rather than a page that silently keeps the old style.
+            The client-side light/dark helper (<code>window.wf.switchTheme()</code>) is independent of all
+            this and works on its own.
+        """) }}
+
+        <h2>Proxies and rate limiting</h2>
+        <p>
+            Two more runtime conveniences worth knowing. If <code>PROXY_FIX</code> is set, your app gets a
+            proxy-headers middleware so client ips survive a reverse proxy &mdash; there is no wrapper
+            object to hand to your server any more, it is simply part of the middleware stack, and
+            <code>PROXY_TRUSTED_HOSTS</code> decides whose headers are believed. And the built-in
+            <a href="https://slowapi.readthedocs.io/en/latest/">slowapi</a> limiter is reachable through
+            <code>fluid.limit</code>, which is where a rate limit actually gets attached:
+        </p>
+
+        {{ code(
+            "example", "python",
+            '''@app.get("/expensive")
+@app.limit("5/minute")
+async def expensive(request: Request):
+    return {"ok": True}'''
+        ) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            The decorator is the whole story: <code>RATELIMIT_DEFAULT</code> is only evaluated by a
+            slowapi middleware the framework does not install, so an undecorated route is not limited at
+            all, and a decorated one overrides the defaults instead of stacking on them. A request that
+            does exceed its limit is rejected with a 429 and the usual rate limit headers &mdash; that
+            part came back with beta 2, which seats the limiter on <code>app.state</code> where the
+            handler looks for it.
+        """) }}
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/utils/logging">Logging</a>.</p>
+    </article>
+{% endblock %}

@@ -1,0 +1,438 @@
+{% extends "docs/base_overview.html" %}
+{% from "docs/partials/_callout.html" import warning %}
+{% from "docs/partials/_overview.html" import feature, fix, bug, break %}
+
+{% block lead %}
+    Beta 2 is a stabilisation release. It adds no batteries and moves almost no names &mdash; instead it
+    walks back through everything beta 1 shipped and closes the holes it left, most of them in the request
+    path. A single missing dunder was quietly dropping the locale from every rendered page; three
+    characters in a query string could crash one; a proxied response could reach the browser broken. Those
+    are fixed, and so is most of the known-issues list beta 1 published. Three small breaking changes ride
+    along, all of them in the Babel helpers. The shape of the framework has not moved since beta 1, so
+    upgrading should cost you nothing beyond reading those three.
+{% endblock %}
+
+{% block features %}
+    <div class="doc-list">
+        {{ feature(
+            "Input that cannot take the page down",
+            """
+                The locale and timezone selectors now treat everything they read from a request as
+                untrusted. A <code>?lang=</code> value, a <code>lang</code> cookie, an
+                <code>Accept-Language</code> header, a <code>tz</code> cookie or an
+                <code>X-Timezone</code> header that does not resolve is skipped rather than raised,
+                and the next candidate gets its turn. The chain always ends at your configured default.
+            """
+        ) }}
+
+        {{ feature(
+            "A proxy that passes bodies through intact",
+            """
+                <code>get_proxy</code> drops the hop-by-hop and encoding headers of the upstream response
+                and recomputes the length for the body it actually forwards, while repeated headers such
+                as <code>Set-Cookie</code> survive as separate lines. What arrives at the browser is now
+                consistent with what it is given.
+            """
+        ) }}
+
+        {{ feature(
+            "UTF-8 wherever the framework writes",
+            """
+                Every manifest, <code>package.json</code>, vite config and generated source file is read
+                and written as explicit UTF-8. A project scaffolded on a Windows console no longer
+                produces files that only that console can read back.
+            """
+        ) }}
+
+        {{ feature(
+            "Stubs that match the runtime",
+            """
+                <code>scripts/check_stubs.py</code> compares module layout and <code>__all__</code>, not
+                signatures, so the stub tree had drifted where it does not look.
+                <code>LogService.drain</code>, <code>console_encoding</code>,
+                <code>Model.__tablename__</code> and <code>__bind_key__</code> are declared,
+                <code>clear_logs</code> lost the parameter it lost in beta 1, and
+                <code>Fluid.app_root</code> is a <code>@deprecated</code> property instead of a type
+                error.
+            """
+        ) }}
+
+        {{ feature(
+            "One version, asserted",
+            """
+                The version lived in three places and the <code>Dockerfile</code> was stale. The image
+                takes a <code>WEBFLUID_VERSION</code> build argument now, and a test asserts that the
+                runtime, the stubs, their cross dependencies and the image all agree before a release
+                can go out.
+            """
+        ) }}
+
+        {{ feature(
+            "Release scripts that stop when a step fails",
+            """
+                <code>publish.bat</code> and <code>publish.sh</code> ran every step unconditionally, so a
+                failed build or a rejected upload still went on to publish the stubs. Each step is checked,
+                a leftover <code>tmp</code> clone is removed before cloning, and both refuse to publish
+                when the freshly cloned branch is not the commit in the working tree &mdash; the case
+                where the release commit was never pushed.
+            """
+        ) }}
+
+        {{ feature(
+            "More tests, in the places that broke",
+            """
+                160 tests now, up from 136. The new ones cover the Babel helpers this release changed,
+                the request pipeline, version resolution and the lifecycle contracts &mdash; the four
+                areas that produced the fixes below.
+            """
+        ) }}
+    </div>
+{% endblock %}
+
+{% block fixes %}
+    <div class="doc-list">
+        {{ fix(
+            "A context that was falsy",
+            """
+                <code>FluidContext.__len__</code> reports the size of its handler data, so a plain request
+                context &mdash; the kind <code>RequestMiddleware</code> builds &mdash; was falsy, and every
+                caller asking <code>if ctx</code> read it as no context at all. <code>get_locale</code> was
+                the loud casualty: <code>?lang=</code>, the <code>lang</code> cookie and
+                <code>Accept-Language</code> were all dropped and every page fell back to
+                <code>BABEL_DEFAULT_LOCALE</code>, while event and query handlers kept working because
+                their contexts carry data. The same check cost <code>Themes.get</code> the session theme
+                and <code>country_from_request</code> its headers. The context is always truthy now, and
+                the call sites test against <code>None</code>.
+            """
+        ) }}
+
+        {{ fix(
+            "A shutdown that always finishes",
+            """
+                Anything that stopped the server task other than a signal hung <code>wf run</code>
+                forever, because <code>Server._start</code> waited on the shutdown flag alone and a task
+                that died &mdash; most often uvicorn calling <code>sys.exit(1)</code> on a bound port
+                &mdash; left nothing to set it. The wait covers the server task too, the failure is
+                re-raised, and shutdown hooks run through a <code>finally</code> on every path.
+            """
+        ) }}
+
+        {{ fix(
+            "Three characters that crashed every page",
+            """
+                <code>?lang=xx</code>, a <code>lang</code> cookie or an <code>Accept-Language</code> value
+                that <code>Locale.parse</code> rejects raised straight out of the context processor, and a
+                <code>tz</code> cookie or <code>X-Timezone</code> header that is not a zone name did the
+                same through <code>ZoneInfo</code>. Both selectors skip what they cannot resolve now.
+            """
+        ) }}
+
+        {{ fix(
+            "Errors that said too much",
+            """
+                The 500 handler put <code>str(exc)</code> into its JSON body outside debug mode, handing
+                callers whatever the exception happened to say &mdash; SQL fragments, file system paths,
+                connection strings. The message, its type and the traceback are debug only; production
+                answers with the status text alone.
+            """
+        ) }}
+
+        {{ fix(
+            "Rate limits answer with a 429",
+            """
+                <code>slowapi</code>'s handler reads the limiter off <code>app.state</code> to inject its
+                headers, and it was installed without one being seated there. Every request that actually
+                hit a limit raised inside the handler and came back as a 500. The limiter is on the state
+                now and the status is the one you configured for.
+            """
+        ) }}
+
+        {{ fix(
+            "One translation key per domain",
+            """
+                <code>I18nKey.key</code> was unique across the whole table instead of per domain, so two
+                domains declaring the same source string shared one row and the second domain's messages
+                were written against the first domain's key. <code>I18nKey</code> carries a
+                <code>(key, domain)</code> constraint now and both <code>kid</code> and
+                <code>resolve_keys</code> filter on the domain. Existing databases need a migration to
+                replace the old index.
+            """
+        ) }}
+
+        {{ fix(
+            "SECURITY_CSRF_COOKIE_NAME is used",
+            """
+                The value was read into the token service and then ignored &mdash; both
+                <code>csrf_response</code> and <code>csrf_protect</code> hardcoded <code>csrf_token</code>.
+                Configuring a different name does what it says now.
+            """
+        ) }}
+
+        {{ fix(
+            "A proxy that no longer breaks compressed responses",
+            """
+                The HTTP proxy forwarded the upstream's <code>Content-Encoding</code> and
+                <code>Content-Length</code> next to a body <code>httpx</code> had already decoded, so a
+                compressed upstream reached the browser as a broken response. The websocket proxy replaced
+                <em>every</em> <code>http</code> in the target URL, mangling any path or query string that
+                contained the word.
+            """
+        ) }}
+
+        {{ fix(
+            "wf migrate init runs",
+            """
+                It raised <code>NameError</code> on every call: the throwaway class it built to hand
+                <code>project_root</code> to <code>init_configs</code> was declared inside the function
+                that owned that name, which Python resolves against the class's own empty namespace. The
+                class is a module-level helper now.
+            """
+        ) }}
+
+        {{ fix(
+            "An alembic.ini that follows your prefix",
+            """
+                The generated file logged under a hardcoded <code>[WF]</code> prefix that no rebrand could
+                reach, because <code>.mako</code> is not among the suffixes the rebrand script rewrites.
+                The prefix is a template field filled from <code>ENV_PREFIX</code>. The multi-database
+                template also stopped describing itself as a single database configuration.
+            """
+        ) }}
+
+        {{ fix(
+            "Arrow keys in interactive mode",
+            """
+                Pressing an arrow or function key under <code>wf run --interactive</code> killed the CLI
+                with <code>UnicodeDecodeError</code>. Windows reports those as a two byte sequence starting
+                with a null or <code>0xE0</code> byte, and <code>read_key</code> decoded the first byte as
+                UTF-8. The prefix is consumed and decoding no longer raises.
+            """
+        ) }}
+
+        {{ fix(
+            "Smaller sharp edges",
+            """
+                <code>POST /url-for</code> answered an unknown endpoint name with a 500 and a logged
+                traceback; <code>NoMatchFound</code> maps to a 404 with <code>UNKNOWN_ENDPOINT</code>.
+                <code>Frontend.include</code> no longer emits a stylesheet link with an empty
+                <code>href</code> when a surface has no Tailwind entry point, which used to make the
+                browser fetch the page again as a stylesheet. And <code>to_user_timezone</code> lost a
+                dead branch that re-stamped UTC over a zone it had already resolved.
+            """
+        ) }}
+    </div>
+{% endblock %}
+
+{% block bugs %}
+    <div class="doc-list">
+        {{ bug(
+            "Database URIs are rewritten everywhere, not just in front",
+            """
+                <code>database_uris</code> inserts the driver with a plain string replace, so every
+                occurrence of the scheme word in your URI is rewritten, not only the leading one.
+                <code>sqlite:///data/sqlite/app.db</code> becomes
+                <code>sqlite+aiosqlite:///data/sqlite+aiosqlite/app.db</code> on the async side, and a
+                MySQL database literally named <code>mysql_prod</code> gets the same treatment. Keep the
+                scheme word out of your paths, database names, users and passwords for now.
+            """
+        ) }}
+
+        {{ bug(
+            "The synchronous mail client ignores MAIL_USE_TLS",
+            """
+                <code>SyncManager</code> stores the flag and then opens a plain connection; only
+                <code>MAIL_USE_STARTTLS</code> is honoured on that path. So <code>mail.send()</code>
+                against a server configured for implicit TLS talks plaintext, with your credentials in it.
+                The async client passes both flags to <code>aiosmtplib</code> correctly. Until this is
+                released, pair port 587 with <code>MAIL_USE_STARTTLS</code>, or use
+                <code>mail.asend()</code>. The shipped defaults &mdash; port 587 with
+                <code>MAIL_USE_TLS</code> on and <code>MAIL_USE_STARTTLS</code> off &mdash; are the wrong
+                pair for both clients.
+            """
+        ) }}
+
+        {{ bug(
+            "App configs are still written in your console encoding",
+            """
+                Beta 2 made every generated file explicitly UTF-8 and missed one:
+                <code>wf create app</code> writes <code>app_configs/&lt;name&gt;.ini</code> in the
+                interpreter's locale encoding, and <code>wf run</code> reads it back the same way. That is
+                symmetric on one machine and breaks the moment a config with a non-ASCII value &mdash; a
+                mail username, a password with an umlaut &mdash; is written on Windows and read anywhere
+                else. Keep app config values ASCII, or move them behind the <code>*_FILE</code>
+                indirection.
+            """
+        ) }}
+
+        {{ bug(
+            "RATELIMIT_DEFAULT never applies",
+            """
+                slowapi evaluates application-wide default limits only from its own middleware, and the
+                framework installs the exception handler without that middleware. So a route without a
+                <code>fluid.limit</code> decorator is never checked at all, and a decorated route replaces
+                the defaults rather than adding to them, because the decorator overrides them by default.
+                Put the limit you want on the route; read <code>RATELIMIT_DEFAULT</code> as intent, not as
+                enforcement.
+            """
+        ) }}
+
+        {{ bug(
+            "Additive after-request processors do not receive a response",
+            """
+                <code>fluid.after_request</code> receives a real <code>Response</code>, because it runs in
+                the ASGI middleware after the app has produced one. <code>additive.after_request</code>
+                runs inside the router's endpoint wrapper, before FastAPI serialises anything, so what it
+                receives is whatever your handler returned &mdash; a dict, a model, a string. Write
+                additive after-request processors against the return value, not against a response object.
+            """
+        ) }}
+
+        {{ bug(
+            "Streaming responses skip after-request processors",
+            """
+                The request middleware buffers the response so <code>after_request</code> can rewrite it,
+                and gives that up the moment the app announces more body to come. A
+                <code>StreamingResponse</code> therefore passes straight through untouched. A buffered
+                one keeps the headers the app produced, so a processor that changes the body has to fix
+                <code>Content-Length</code> itself &mdash; return a new response rather than mutating the
+                one you were handed.
+            """
+        ) }}
+
+        {{ bug(
+            "url_for is None outside a request",
+            """
+                Both the framework's context processor and the additive one build <code>url_for</code>
+                from the request in the current context and hand back <code>None</code> when there is
+                none. Rendering a template from a startup hook, a scheduled job or a mail routine
+                therefore fails with a <code>NoneType is not callable</code> error rather than a missing
+                name. Use <code>fluid.url_path_for()</code> or a configured <code>BASE_URL</code> in
+                templates that render off-request.
+            """
+        ) }}
+
+        {{ bug(
+            "JWT keys live in the cache",
+            """
+                Key rotation writes the signing keys into whatever <code>CACHE_TYPE</code> points at, and
+                a rotation also runs as a startup hook. With the legacy cache that store is in-process, so
+                every restart mints a new key and forgets the old ones, and every token issued before it
+                stops decoding. Run the JWT extension against Redis. A token whose <code>kid</code> is not
+                in the cache also fails with a raw <code>TypeError</code> from the signing library rather
+                than an <code>InvalidTokenError</code>, so catch broadly when you decode by hand.
+            """
+        ) }}
+
+        {{ bug(
+            "Bearer grants assume a numeric subject",
+            """
+                <code>resolve_bearer</code> looks the principal up with <code>int(sub)</code>. A token
+                whose <code>sub</code> is a uuid or an email raises <code>ValueError</code> from inside the
+                fallback branch of the gate, which nothing catches, and the request comes back as a 500
+                instead of a 401. Keep <code>sub</code> the user's primary key.
+            """
+        ) }}
+
+        {{ bug(
+            "A translation equal to its source falls through",
+            """
+                The domain escalation accepts a catalog's answer only when it differs from the string it
+                was given, so a deliberate translation that happens to equal the source &mdash; an English
+                catalog translating <code>Save</code> to <code>Save</code> &mdash; is read as a miss and
+                the next domain in the chain gets to answer instead. Screaming-snake keys like
+                <code>ERROR_TITLE</code> avoid the whole class of collision, which is why the framework's
+                own catalog uses them.
+            """
+        ) }}
+
+        {{ bug(
+            "Migrate template selection",
+            """
+                <code>wf migrate init</code> chooses the single- or multi-database template from
+                <code>SQLALCHEMY_BINDS</code> in your config, at init time. Binds attached at runtime
+                through <code>Model.set_bind</code> are not detected and need a manual template.
+            """
+        ) }}
+
+        {{ bug(
+            "Event backpressure",
+            """
+                Broadcasts use a bounded per-listener buffer sized by <code>EVENTS_EVENT_QUEUE_SIZE</code>.
+                A consumer that falls behind still loses its oldest events &mdash; it is logged as a
+                warning rather than happening silently, but delivery stays best-effort either way.
+            """
+        ) }}
+
+        {{ bug(
+            "Hooks live in mix(), not in the lifespan",
+            """
+                Startup and shutdown hooks run from <code>fluid.mix()</code> rather than through the ASGI
+                lifespan protocol, so they do not run when an external ASGI server imports and serves your
+                app. Run your apps through <code>wf run</code> for now.
+            """
+        ) }}
+
+        {{ bug(
+            "Signals need a running loop",
+            """
+                <code>events.create_signal</code> and <code>events.event</code> have to be called from
+                inside the running event loop, because the broadcaster loop is created eagerly. Register
+                them from an enable hook or a startup hook, not at import time.
+            """
+        ) }}
+
+        {{ bug(
+            "Uncached translations still block",
+            """
+                A key you explicitly opted out of the cache is read through a synchronous session on the
+                <code>gettext</code> path. <code>agettext</code> offers a non-blocking alternative, but
+                the callables installed into Jinja stay synchronous on purpose.
+            """
+        ) }}
+
+        {{ bug(
+            "Hot reload across several frontends",
+            """
+                HMR across the main app and multiple Additive frontends works, but not always cleanly.
+                If a reload gets confused, restarting the dev run sorts it out.
+            """
+        ) }}
+    </div>
+{% endblock %}
+
+{% block breaks %}
+    <div class="doc-list">
+        {{ break(
+            "format_date takes fmt, not ftm",
+            """
+                The typo is gone. <code>format_date(d, ftm=...)</code> is
+                <code>format_date(d, fmt=...)</code>, which is what every other formatter in
+                <code>webfluid.extensions.babel.utils</code> already called it. Positional calls and the
+                <code>dateformat</code> Jinja filter are unaffected.
+            """
+        ) }}
+
+        {{ break(
+            "to_utc converts instead of stripping",
+            """
+                It used to return <code>dt.replace(tzinfo=None)</code>, which keeps the wall clock and
+                throws the offset away: a Berlin <code>12:00+02:00</code> came back as a naive
+                <code>12:00</code> that every consumer then read as UTC, two hours off. It converts to UTC
+                before dropping the offset now, and reads a naive input as user-local time, which makes it
+                the inverse of <code>to_user_timezone</code> again. Code that relied on the old behaviour
+                to strip a <code>tzinfo</code> should call <code>dt.replace(tzinfo=None)</code> itself.
+            """
+        ) }}
+
+        {{ break(
+            "parse_best_match reports no match",
+            """
+                A missing <code>Accept-Language</code> header used to be answered with the first supported
+                locale, so an app whose <code>BABEL_SUPPORTED_LOCALES</code> does not start with
+                <code>BABEL_DEFAULT_LOCALE</code> served the wrong language to every client that sends no
+                header. It returns <code>None</code> now and lets the caller fall back to the configured
+                default. If you call it yourself, handle the <code>None</code>.
+            """
+        ) }}
+    </div>
+{% endblock %}

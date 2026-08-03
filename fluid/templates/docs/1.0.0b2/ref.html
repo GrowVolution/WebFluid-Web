@@ -1,0 +1,73 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_callout.html" import info %}
+
+{% block title %}Reference — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Reference</span>
+        <h1 class="doc-h1">Overview</h1>
+        <p class="doc-lead">
+            The chapters so far told a story. This section is the index card &mdash; a rough map of the
+            classes, features and functions WebFluid exposes, grouped by where they live. It is
+            deliberately terse: enough to find a name and remember what it does, not a line-by-line
+            specification.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            From this beta onwards, everything listed in a package's <code>__all__</code> follows semantic
+            versioning. Anything else &mdash; module layout, private attributes, helpers that are not
+            exported &mdash; is internal and may move in any release. Treat this page as a compass rather
+            than a specification, and keep your version pinned while the beta runs.
+        """) }}
+
+        <h2>How the package is laid out</h2>
+        <p>The import tree mirrors the layers you've worked through:</p>
+        <ul>
+            <li>
+                <a href="/v/{{ version }}/ref/core">Core</a> &mdash; <code>webfluid</code>,
+                <code>webfluid.core.*</code>: the <code>Fluid</code> app, config, context, the shared
+                extension registry and the runtime constants.
+            </li>
+            <li>
+                <a href="/v/{{ version }}/ref/extensions">Extensions</a> &mdash;
+                <code>webfluid.extensions.*</code>: the base extension and the full battery set.
+            </li>
+            <li>
+                <a href="/v/{{ version }}/ref/surface">Surface</a> &mdash;
+                <code>webfluid.surface.*</code>: the frontend integration, Node and Tailwind tooling.
+            </li>
+            <li>
+                <a href="/v/{{ version }}/ref/additives">Additives</a> &mdash; the
+                <code>Additive</code> system, manifests and the registry helpers.
+            </li>
+            <li>
+                <a href="/v/{{ version }}/ref/utils">Utils</a> &mdash;
+                <code>webfluid.utils.*</code>: framework helpers, logging and the exception hierarchy.
+            </li>
+        </ul>
+
+        <h2>Top-level exports</h2>
+        <p>What you can import straight from <code>webfluid</code>:</p>
+        <ul>
+            <li><code>Fluid</code> &mdash; the application class. See <a href="/v/{{ version }}/ref/core">Core</a>.</li>
+            <li><code>Additive</code>, <code>Manifest</code> &mdash; the module system. See <a href="/v/{{ version }}/ref/additives">Additives</a>.</li>
+            <li><code>version</code> &mdash; a callable returning the running framework version.</li>
+            <li><code>utils</code>, <code>fluid</code>, <code>extensions</code>, <code>exceptions</code> &mdash; the sub-packages.</li>
+        </ul>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            Every package in the tree resolves its exports lazily through a module <code>__getattr__</code>,
+            so importing <code>webfluid</code> does not drag the whole framework into memory and an
+            extension you never enable is never instantiated. It also means <code>dir()</code> on a package
+            is the honest list of what it offers.
+        """) }}
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/ref/core">Core</a>.</p>
+    </article>
+{% endblock %}

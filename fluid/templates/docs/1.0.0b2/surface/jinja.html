@@ -1,0 +1,170 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import info, warning %}
+
+{% block title %}Template Resolution — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Frontend</span>
+        <h1 class="doc-h1">Template resolution</h1>
+        <p class="doc-lead">
+            We've been calling <code>fluid.render("index.html")</code> and extending
+            <code>fluid_base.html</code> without ever explaining where those names actually point. This
+            chapter pulls back the curtain &mdash; which matters, because the name you pass decides
+            which file wins.
+        </p>
+
+        <h2>Rendering, the short version</h2>
+        <p>
+            <code>fluid.render(template, **ctx)</code> does two things: it runs every registered context
+            processor (that's where the surface variables from the previous chapter come from) and then
+            renders the template through the async Jinja environment. The <code>template</code> argument
+            is a name, and that name is looked up against a stack of loaders.
+            <br><br>
+            Its sibling <code>fluid.render_string(source, **ctx)</code> does the same for a template you
+            hold as a string instead of a file &mdash; same context processors, same environment, no
+            lookup. Reach for it when the template comes from your database or from a user, and for
+            nothing else: a string has no name, so it can neither be cached nor extended.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            <code>render()</code> no longer takes an <code>is_string</code> flag. If you carry one over
+            from an alpha it is not an error &mdash; it quietly becomes an ordinary template variable
+            while your source string is looked up as a file name, and you get a
+            <code>TemplateNotFound</code> naming your entire template. Use <code>render_string</code>.
+        """) }}
+
+        <h2>Three sources, in order</h2>
+        <p>
+            When your app starts, the framework assembles the Jinja loader from three layers and
+            searches them in this exact order:
+        </p>
+        <ol>
+            <li>
+                <strong>Your app</strong> &mdash; everything inside <code>fluid/templates</code>, searched
+                first for a plain name.
+            </li>
+            <li>
+                <strong>Additives</strong> &mdash; each enabled Additive contributes its templates under
+                its own id namespace, so they never shadow your unprefixed names (more on that in the
+                Additives chapters).
+            </li>
+            <li>
+                <strong>The framework</strong> &mdash; the bundled templates like
+                <code>fluid_base.html</code> and the error pages.
+            </li>
+        </ol>
+
+        <p>
+            Because your app sits <em>before</em> the framework, an unprefixed name resolves to your
+            file first and falls through to the framework only if you don't have one. So the names map
+            to disk like this:
+        </p>
+
+        {{ code(
+            "resolution", "text",
+            '''render("index.html")        -> fluid/templates/index.html        (your app)
+render("docs/intro.html")   -> fluid/templates/docs/intro.html   (your app)
+render("fluid_base.html")   -> bundled with the framework
+render("errors/404.html")   -> bundled with the framework'''
+        ) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            The path you pass is always relative to fluid/templates. Nest as deeply as you like: the
+            documentation site you are reading right now renders pages with names such as
+            docs/1.0.0b2/get-started.html, which is just a file at that path inside its fluid/templates.
+        """) }}
+
+        <h2>Overriding framework templates</h2>
+        <p>
+            That ordering has a useful consequence: since your app is searched first, you can replace
+            any framework template by simply creating a file with the same name. Want your own 404 page
+            or your own base layout? Drop it into <code>fluid/templates</code> and it takes over &mdash;
+            no configuration needed:
+        </p>
+
+        {{ code(
+            "fluid/templates/errors/404.html", "html",
+            """{% extends &quot;fluid_base.html&quot; %}
+
+{% block content %}
+    &lt;h1&gt;{{ _('Lost at sea') }}&lt;/h1&gt;
+{% endblock %}"""
+        ) }}
+
+        <h2>Explicit namespaces</h2>
+        <p>
+            Sometimes you want to be unambiguous about which layer you mean. Each source also answers to
+            a prefix, so you can skip the fall-through entirely:
+        </p>
+        <ul>
+            <li>
+                <code>app/&hellip;</code> &mdash; force your app's templates, e.g.
+                <code>app/index.html</code>.
+            </li>
+            <li>
+                <code>fluid/&hellip;</code> &mdash; force the framework's templates, e.g.
+                <code>fluid/fluid_base.html</code>. Handy when you have overridden a name locally but
+                still want to extend the original.
+            </li>
+            <li>
+                <code>&lt;additive_id&gt;/&hellip;</code> &mdash; an Additive's templates always live
+                under its id.
+            </li>
+        </ul>
+
+        <p>
+            This is why Additives never collide with your app: their files are only ever reachable
+            through their own id namespace. An Additive's own <code>render()</code> adds that prefix for
+            you automatically, so inside an Additive you keep writing plain names.
+        </p>
+
+        <h2>What the framework gives you</h2>
+        <p>
+            For reference, these are the templates you can always extend or override:
+        </p>
+        <ul>
+            <li><code>fluid_base.html</code> &mdash; the default page layout.</li>
+            <li><code>base_email.html</code> &mdash; a starting point for HTML mails.</li>
+            <li><code>errors/&lt;status&gt;.html</code> &mdash; the default error pages for the common HTTP statuses (400, 401, 403, 404, 405, 429, 500, 502, 503), rendered automatically by the processing layer. In debug mode a detailed <code>errors/debug/500.html</code> takes over for unhandled exceptions.</li>
+        </ul>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            Those pages are only rendered for a client that asks for HTML. Everything else gets JSON, and
+            outside debug mode that JSON says nothing but the status text &mdash; the exception's message,
+            its type and its traceback are debug-only, so a production 500 cannot hand an api client the
+            sql fragment or connection string the exception happened to carry.
+        """) }}
+
+        <h2>When the stack is sealed</h2>
+        <p>
+            The loader stack is assembled once, at startup, and then frozen. Additives add theirs while
+            they are being enabled; if you ever need to contribute one yourself, that is what
+            <code>fluid.add_template_loader(loader)</code> is for, and it has to happen before the server
+            comes up.
+            <br><br>
+            Freezing buys you the second half: outside debug mode Jinja stops checking whether a template
+            changed on disk, because nothing can. In debug mode it does check, so your edits show up on
+            reload &mdash; which is also why a page renders noticeably faster in production than it does
+            while you are writing it.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            Keep this resolution order in mind when you name your pages. As long as your page lives
+            under fluid/templates and doesn't shadow a framework name you rely on, you are free to
+            structure the directory however suits your project.
+        """) }}
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/additives/intro">the Additives introduction</a>.</p>
+    </article>
+{% endblock %}
