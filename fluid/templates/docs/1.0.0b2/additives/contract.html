@@ -255,9 +255,11 @@ def before_enable(_):
         <span class="my-5">&nbsp;</span>
 
         {{ warning("""
-            HMR across several frontends works, but not always cleanly. If a reload gets confused,
-            restarting the dev run sorts it out. It is good enough to develop against; just don't be
-            surprised by the occasional hiccup.
+            HMR across several frontends works reliably. The one thing worth knowing is that it rides on
+            the proxied websocket in front of the shared dev server, and that connection can die on its
+            own &mdash; a Vite restart, a dropped connection, whatever the reason. When it does, a
+            frontend simply stops picking up changes. You don't need to restart wf run for that: a plain
+            browser refresh re-establishes the proxy and HMR is live again.
         """) }}
 
         <h2>Packaging and distribution</h2>
