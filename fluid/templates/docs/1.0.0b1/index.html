@@ -292,10 +292,13 @@
         ) }}
 
         {{ bug(
-            "Hot reload across several frontends",
+            "HMR relies on a proxied websocket that can die",
             """
-                HMR across the main app and multiple Additive frontends works, but not always cleanly.
-                If a reload gets confused, restarting the dev run sorts it out.
+                Hot reload across the main app and multiple Additive frontends rides on the websocket
+                proxy in front of the shared dev server. That connection can drop on its own &mdash; a
+                Vite restart is the usual trigger &mdash; and when it does, the affected frontend simply
+                stops picking up changes. A browser refresh re-establishes the proxy immediately; there is
+                no need to restart <code>wf run</code> for it.
             """
         ) }}
     </div>

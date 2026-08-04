@@ -1,4 +1,6 @@
-User-agent: *
+{% for note in notes or [] %}# {{ note }}
+{% endfor %}{% if notes %}
+{% endif %}User-agent: *
 {% for path in disallow %}Disallow: {{ path }}
 {% endfor %}{% if not disallow %}Disallow:
 {% endif %}

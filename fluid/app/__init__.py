@@ -30,11 +30,15 @@ def setup_docs():
         handle_latest as latest_docs,
         handle_request as docs,
         handle_robots as robots,
-        handle_sitemap as sitemap
+        handle_sitemap as sitemap,
+        handle_llms as llms,
+        handle_llms_full as llms_full
     )
     docs_router.get("/")(lambda: RedirectResponse("/latest/", status_code=301))
     docs_router.get("/robots.txt", response_class=Response)(robots)
     docs_router.get("/sitemap", response_class=Response)(sitemap)
+    docs_router.get("/llms.txt", response_class=Response)(llms)
+    docs_router.get("/llms-full.txt", response_class=Response)(llms_full)
     docs_router.get("/latest/{path:path}")(latest_docs)
     docs_router.get("/v/{version}/{path:path}")(docs)
 

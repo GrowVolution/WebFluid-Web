@@ -39,6 +39,20 @@ class Config(MyConfig):
     }
     LATEST_VERSION = "1.0.0b2"
 
+    DOCS_ORDER = (
+        "index", "get-started",
+        "config/app-config", "config/config-class",
+        "ext/base", "ext/scheduling", "ext/sqlalchemy", "ext/migrate",
+        "ext/mailman", "ext/babel", "ext/security", "ext/events",
+        "ext/cache", "ext/jwt",
+        "surface/tooling", "surface/frontend", "surface/jinja",
+        "additives/intro", "additives/base", "additives/contract",
+        "utils/lifecycle", "utils/runtime", "utils/logging",
+        "cli/wf", "cli/create", "cli/run", "cli/ocean",
+        "ref", "ref/core", "ref/extensions",
+        "ref/surface", "ref/additives", "ref/utils"
+    )
+
     OCEAN_SITEMAP_EXTRA = {
         "/terms": "2026-07-11",
         "/licensing": "2026-07-11"
