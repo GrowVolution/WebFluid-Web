@@ -20,9 +20,19 @@ def setup_home():
         handle_sitemaps as sitemaps
     )
     home_router.get("/")(index)
-    home_router.get("/robots.txt", response_class=Response)(robots)
-    home_router.get("/sitemap", response_class=Response)(sitemap)
-    home_router.get("/sitemaps", response_class=Response)(sitemaps)
+    home_router.api_route(
+        "/robots.txt",
+        response_class=Response,
+        methods=["GET", "HEAD"]
+    )(robots)
+    home_router.get(
+        "/sitemap",
+        response_class=Response
+    )(sitemap)
+    home_router.get(
+        "/sitemaps",
+        response_class=Response
+    )(sitemaps)
 
 
 def setup_docs():
@@ -34,11 +44,31 @@ def setup_docs():
         handle_llms as llms,
         handle_llms_full as llms_full
     )
-    docs_router.get("/")(lambda: RedirectResponse("/latest/", status_code=301))
-    docs_router.get("/robots.txt", response_class=Response)(robots)
-    docs_router.get("/sitemap", response_class=Response)(sitemap)
-    docs_router.get("/llms.txt", response_class=Response)(llms)
-    docs_router.get("/llms-full.txt", response_class=Response)(llms_full)
+    docs_router.get("/")(
+        lambda: RedirectResponse(
+            "/latest/",
+            status_code=301
+        )
+    )
+    docs_router.api_route(
+        "/robots.txt",
+        response_class=Response,
+        methods=["GET", "HEAD"]
+    )(robots)
+    docs_router.get(
+        "/sitemap",
+        response_class=Response
+    )(sitemap)
+    docs_router.api_route(
+        "/llms.txt",
+        response_class=Response,
+        methods=["GET", "HEAD"]
+    )(llms)
+    docs_router.api_route(
+        "/llms-full.txt",
+        response_class=Response,
+        methods=["GET", "HEAD"]
+    )(llms_full)
     docs_router.get("/latest/{path:path}")(latest_docs)
     docs_router.get("/v/{version}/{path:path}")(docs)
 
@@ -51,6 +81,10 @@ def setup_ocean():
         handle_licensing as licensing
     )
     ocean_router.get("/")(discovery)
-    ocean_router.get("/robots.txt", response_class=Response)(robots)
+    ocean_router.api_route(
+        "/robots.txt",
+        response_class=Response,
+        methods=["GET", "HEAD"]
+    )(robots)
     ocean_router.get("/terms")(terms)
     ocean_router.get("/licensing")(licensing)
