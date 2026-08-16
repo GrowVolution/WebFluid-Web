@@ -53,6 +53,7 @@ class Config(MyConfig):
         "ref/surface", "ref/additives", "ref/utils"
     )
 
+    OCEAN_INDEX_LASTMOD = "2026-08-16"
     OCEAN_SITEMAP_EXTRA = {
         "/terms": "2026-07-11",
         "/licensing": "2026-07-11"

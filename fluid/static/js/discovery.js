@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const REQUEST_TIMEOUT = 12000
 
     const config = window.ocDiscovery || {}
-    const socket = window.wf.createWS("/ws/events")
+    const events = new window.wf.ext.events.EventManager()
 
     const results = document.getElementById("ocResults")
     const more = document.getElementById("ocMore")
@@ -41,11 +41,13 @@ document.addEventListener("DOMContentLoaded", () => {
         return new Promise(resolve => setTimeout(resolve, ms))
     }
 
-    function request(query, data) {
-        return Promise.race([
-            socket.request("request", { query, data }),
+    async function request(query, data) {
+        const result = await Promise.race([
+            events.request(query, data),
             wait(REQUEST_TIMEOUT).then(() => Promise.reject("timeout"))
         ])
+        if (!result) throw "unanswered"
+        return result
     }
 
     function setDisabled(input, disabled) {
