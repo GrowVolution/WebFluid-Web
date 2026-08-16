@@ -9,10 +9,10 @@
   "The fullstack framework that",
   "Das Fullstack-Framework, das"
   ],
-  "HOME_HERO_TITLE_FLOW": ["flows async-first", "async-first fließt"],
+  "HOME_HERO_TITLE_FLOW": ["flows async-first", "async-first im Fluss bleibt"],
   "HOME_HERO_SUB": [
   "WebFluid sits on top of FastAPI and ships a complete toolkit out of the box. Async everywhere with a sync counterpart for every battery, one CLI for everything, and a modular runtime that grows with your project.",
-  "WebFluid baut auf FastAPI auf und liefert ein komplettes Toolkit out of the box. Überall async mit einem synchronen Gegenstück für jede Battery, eine CLI für alles und eine modulare Laufzeit, die mit deinem Projekt wächst."
+  "WebFluid setzt auf FastAPI auf und bringt das komplette Werkzeug schon mit: durchgehend async, für jede Battery ein synchrones Gegenstück, eine CLI für alles – und eine modulare Laufzeit, die mit deinem Projekt mitwächst."
   ],
   "HOME_READ_DOCS": ["Read the docs", "Zur Dokumentation"],
   "HOME_VIEW_GITHUB": ["View on GitHub", "Auf GitHub ansehen"],
@@ -20,22 +20,22 @@
   "HOME_WHY_KICKER": ["Why WebFluid", "Warum WebFluid"],
   "HOME_WHY_H2": [
   "Everything you reach for, already wired up",
-  "Alles, wonach du greifst, ist bereits verdrahtet"
+  "Alles griffbereit, alles schon verdrahtet"
   ],
   "HOME_WHY_LEAD": [
   "Most frameworks make you assemble the stack yourself. WebFluid ships the batteries, keeps them consistent across sync and async, and lets you bolt on features through a clean module system instead of a pile of cross-imports.",
-  "Die meisten Frameworks lassen dich den Stack selbst zusammenbauen. WebFluid liefert die Batteries, hält sie über sync und async hinweg konsistent und lässt dich Features über ein sauberes Modulsystem ergänzen statt über einen Haufen Cross-Imports."
+  "Bei den meisten Frameworks baust du dir den Stack erst mühsam zusammen. WebFluid bringt die Batteries mit, hält sie in sync und async konsistent und lässt dich Features über ein sauberes Modulsystem ergänzen – statt über einen Wust von Cross-Imports."
   ],
 
   "HOME_CARD1_H3": ["Async-first, sync-compatible", "Async-first, sync-kompatibel"],
   "HOME_CARD1_P": [
   "Every battery exposes an async API and a matching sync one, so you pick the model that fits the job instead of fighting the framework.",
-  "Jede Battery stellt eine async-API und ein passendes sync-Pendant bereit, sodass du das Modell wählst, das zur Aufgabe passt, statt gegen das Framework zu kämpfen."
+  "Jede Battery hat eine async-API und ein passendes sync-Pendant. So wählst du das Modell, das zur Aufgabe passt, statt gegen das Framework anzuprogrammieren."
   ],
-  "HOME_CARD2_H3": ["CLI-first bootstrapping", "CLI-first-Bootstrapping"],
+  "HOME_CARD2_H3": ["CLI-first bootstrapping", "Bootstrapping per CLI"],
   "HOME_CARD2_P_1": [
   "Spin up a project, add modules, run the dev server. The",
-  "Erstelle ein Projekt, füge Module hinzu, starte den Dev-Server. Die"
+  "Projekt anlegen, Module ergänzen, Dev-Server starten: Die"
   ],
   "HOME_CARD2_P_2": [
   "CLI takes you from empty folder to running app without glue code.",
@@ -44,65 +44,65 @@
   "HOME_CARD3_H3": ["Modular Additives", "Modulare Additives"],
   "HOME_CARD3_P": [
   "Build features as self-contained sub apps that share one runtime. Version-pin them, pull them from the Hub, and keep modules from importing each other.",
-  "Baue Features als eigenständige Sub-Apps, die sich eine Laufzeit teilen. Pinne sie auf Versionen, hole sie aus dem Hub und verhindere, dass Module einander importieren."
+  "Bau Features als eigenständige Sub-Apps, die sich eine Laufzeit teilen: auf Versionen gepinnt, aus dem Hub geladen – und ohne dass ein Modul das andere importieren muss."
   ],
   "HOME_CARD4_H3": ["Batteries included", "Batteries inklusive"],
   "HOME_CARD4_P": [
   "SQLAlchemy with sync and async binds, migrations, a mailer, a JWT manager with rotating secrets, runtime-cached i18n, events/queries and a cache that swaps between memory and Redis.",
-  "SQLAlchemy mit sync- und async-Binds, Migrationen, ein Mailer, ein JWT-Manager mit rotierenden Secrets, zur Laufzeit gecachtes i18n, Events/Queries und ein Cache, der zwischen Memory und Redis wechselt."
+  "SQLAlchemy mit sync- und async-Binds, Migrationen, ein Mailer, ein JWT-Manager mit rotierenden Secrets, i18n mit Laufzeit-Cache, Events und Queries – und ein Cache, der zwischen Memory und Redis wechselt."
   ],
   "HOME_CARD5_H3": ["Vite and Tailwind, no setup", "Vite und Tailwind, ohne Setup"],
   "HOME_CARD5_P": [
   "A single dev server drives SSR Jinja2, API-only modules, or parallel Svelte, React, and Vue frontends. Standalone Node and the Tailwind CLI come bundled.",
-  "Ein einziger Dev-Server treibt SSR-Jinja2, reine API-Module oder parallele Svelte-, React- und Vue-Frontends an. Standalone-Node und die Tailwind-CLI sind mitgeliefert."
+  "Ein einziger Dev-Server bedient SSR-Jinja2, reine API-Module und mehrere Svelte-, React- oder Vue-Frontends parallel. Node und die Tailwind-CLI bringt WebFluid selbst mit."
   ],
-  "HOME_CARD6_H3": ["Config-driven runtime", "Konfigurationsgesteuerte Laufzeit"],
+  "HOME_CARD6_H3": ["Config-driven runtime", "Laufzeit per Konfiguration"],
   "HOME_CARD6_P": [
   "Configuration loads into the env at run time and the app starts as a subprocess. Toggle features and modules using flags, no code changes required.",
-  "Die Konfiguration wird zur Laufzeit in die Env geladen und die App startet als Subprozess. Schalte Features und Module über Flags um, ganz ohne Codeänderungen."
+  "Die Konfiguration landet beim Start in der Env, die App läuft als eigener Subprozess. Features und Module schaltest du per Flag – ohne eine Zeile Code zu ändern."
   ],
 
   "HOME_QS_KICKER": ["Quickstart", "Schnellstart"],
   "HOME_QS_H2": [
   "From zero to running in a few commands",
-  "Von null zur laufenden App in wenigen Befehlen"
+  "In wenigen Befehlen von null zur laufenden App"
   ],
   "HOME_QS_LEAD": [
   "Scaffold a project, opt into the batteries you want, and start the dev server. Node and Tailwind are pulled in automatically the first time you need them.",
-  "Erzeuge ein Projektgerüst, aktiviere die gewünschten Batteries und starte den Dev-Server. Node und Tailwind werden beim ersten Bedarf automatisch nachgezogen."
+  "Projekt aufsetzen, die gewünschten Batteries aktivieren, Dev-Server starten. Node und Tailwind holt sich WebFluid beim ersten Bedarf selbst."
   ],
   "HOME_QS_STEP1": [
   "Scaffold a project and pick your frontend with",
-  "Erzeuge ein Projektgerüst und wähle dein Frontend mit"
+  "Projekt aufsetzen und Frontend wählen mit"
   ],
   "HOME_QS_STEP2": [
   "Generate an app config and toggle the batteries via",
-  "Erzeuge eine App-Konfiguration und schalte die Batteries um über"
+  "App-Konfiguration anlegen und Batteries schalten mit"
   ],
   "HOME_QS_STEP3": [
   "Run it with hot reload through",
-  "Starte sie mit Hot Reload über"
+  "Mit Hot Reload starten über"
   ],
   "HOME_QS_LINK": [
   "Explore the command line interface",
-  "Entdecke das Command-Line-Interface"
+  "Alle CLI-Befehle entdecken"
   ],
   "HOME_TERMINAL": ["terminal", "Terminal"],
 
   "HOME_HUB_H2": ["A Hub for modular Additives", "Ein Hub für modulare Additives"],
   "HOME_HUB_P": [
   "WebFluid is modular by design. Ocean will be the place to publish, discover, and pull version-pinned Additives straight into your runtime, so sharing a module is as simple as declaring it in your manifest.",
-  "WebFluid ist von Grund auf modular. Ocean wird der Ort, um versionsgepinnte Additives zu veröffentlichen, zu entdecken und direkt in deine Laufzeit zu ziehen – ein Modul zu teilen ist so einfach wie es im Manifest zu deklarieren."
+  "WebFluid ist von Grund auf modular. Ocean wird der Ort, an dem Additives veröffentlicht, gefunden und versionsgenau in deine Laufzeit geholt werden – ein Modul zu teilen heißt dann nur noch, es im Manifest einzutragen."
   ],
   "HOME_HUB_CTA": ["Explore the Hub", "Hub entdecken"],
 
-  "HOME_CTA_H2": ["Ready to build something fluid?", "Bereit, etwas Fluides zu bauen?"],
+  "HOME_CTA_H2": ["Ready to build something fluid?", "Bereit, etwas in Fluss zu bringen?"],
   "HOME_CTA_P": [
   "Dive into the docs and ship your first Additive in minutes.",
-  "Tauch in die Docs ein und veröffentliche dein erstes Additive in Minuten."
+  "Ab in die Docs – dein erstes Additive steht in wenigen Minuten."
   ],
   "HOME_GET_STARTED": ["Get started", "Loslegen"],
-  "HOME_STAR_GITHUB": ["🌟 Star on GitHub", "🌟 Auf GitHub favorisieren"],
+  "HOME_STAR_GITHUB": ["🌟 Star on GitHub", "🌟 Auf GitHub einen Stern geben"],
 
   "Imprint": ["Imprint", "Impressum"],
   "Privacy": ["Privacy", "Datenschutz"]

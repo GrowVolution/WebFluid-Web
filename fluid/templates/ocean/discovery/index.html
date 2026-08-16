@@ -111,15 +111,15 @@
         </section>
 
         <section class="oc-results-wrap">
-            <div class="oc-grid" id="ocResults">{{ slice | safe }}</div>
+            <div class="oc-grid" id="ocResults"></div>
 
             <div class="oc-more-wrap">
                 <button
                         type="button"
                         id="ocMore"
                         class="web-btn web-btn-ghost"
-                        data-offset="{{ next_offset }}"
-                        {{ "hidden" if not has_more }}
+                        data-offset="0"
+                        hidden
                 >
                     {{ _("OCEAN_LOAD_MORE") }}
                 </button>
@@ -131,5 +131,12 @@
 {% endblock %}
 
 {% block web_scripts %}
+    <script>
+        window.ocDiscovery = {
+            i18n: {
+                error: {{ _("OCEAN_DISCOVERY_FAILED") | tojson }}
+            }
+        }
+    </script>
     <script src="{{ url_for('static', path='js/discovery.js') }}" defer></script>
 {% endblock %}

@@ -1,5 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const API = "/hub/api/v1"
+    const DISCOVERY = "ocean_discovery"
+    const SUGGESTIONS = "ocean_discovery:suggestions"
+
+    const STAGGER = 70
+    const REQUEST_TIMEOUT = 12000
+
+    const config = window.ocDiscovery || {}
+    const socket = window.wf.createWS("/ws/events")
 
     const results = document.getElementById("ocResults")
     const more = document.getElementById("ocMore")
@@ -28,6 +35,17 @@ document.addEventListener("DOMContentLoaded", () => {
         if (type === "additives") return "📦"
         if (type === "extensions") return "🧩"
         return "🎁"
+    }
+
+    function wait(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms))
+    }
+
+    function request(query, data) {
+        return Promise.race([
+            socket.request("request", { query, data }),
+            wait(REQUEST_TIMEOUT).then(() => Promise.reject("timeout"))
+        ])
     }
 
     function setDisabled(input, disabled) {
@@ -80,23 +98,29 @@ document.addEventListener("DOMContentLoaded", () => {
         syncFilters()
     }))
 
-    function filterParams(query) {
+    function filterPayload(payload) {
         const types = typeChecks.filter(c => c.checked && !c.disabled).map(c => c.value)
-        if (types.length) query.set("type", types.join(","))
+        if (types.length) payload.type = types.join(",")
 
         const licenses = licenseChecks.filter(c => c.checked && !c.disabled).map(c => c.value)
-        if (licenses.length === 1) query.set("license", licenses[0])
+        if (licenses.length === 1) payload.license = licenses[0]
 
         const sort = sortRadios.find(r => r.checked && !r.disabled)
-        if (sort && sort.value !== "newest") query.set("sort", sort.value)
-        return query
+        if (sort && sort.value !== "newest") payload.sort = sort.value
+        return payload
     }
 
-    function params() {
-        const query = new URLSearchParams()
+    function payload() {
+        const data = {}
         const q = search.value.trim()
-        if (q) query.set("q", q)
-        return filterParams(query)
+        if (q) data.q = q
+        return filterPayload(data)
+    }
+
+    function urlParams() {
+        const params = new URLSearchParams()
+        for (const [key, value] of Object.entries(payload())) params.set(key, value)
+        return params
     }
 
     function resolveIcons(scope) {
@@ -113,6 +137,81 @@ document.addEventListener("DOMContentLoaded", () => {
         })
     }
 
+    // staggered reveal
+
+    const pending = []
+    const observer = new IntersectionObserver(onIntersect, { rootMargin: "120px 0px" })
+
+    let ordinal = 0
+    let revealing = false
+
+    function onIntersect(entries) {
+        let queued = false
+        for (const entry of entries) {
+            if (!entry.isIntersecting) continue
+            observer.unobserve(entry.target)
+            pending.push(entry.target)
+            queued = true
+        }
+        if (queued) reveal()
+    }
+
+    async function reveal() {
+        if (revealing) return
+        revealing = true
+
+        while (pending.length) {
+            pending.sort((a, b) => Number(a.dataset.ord) - Number(b.dataset.ord))
+            const card = pending.shift()
+            if (!card.isConnected) continue
+
+            card.classList.add("is-in")
+            await wait(STAGGER)
+        }
+
+        revealing = false
+    }
+
+    function buildCard(html) {
+        const holder = document.createElement("template")
+        holder.innerHTML = html.trim()
+        return holder.content.firstElementChild
+    }
+
+    function appendCards(cards) {
+        for (const html of cards || []) {
+            const card = buildCard(html)
+            if (!card) continue
+
+            card.dataset.ord = String(ordinal++)
+            results.appendChild(card)
+            resolveIcons(card)
+            observer.observe(card)
+        }
+    }
+
+    function clearCards() {
+        observer.disconnect()
+        pending.length = 0
+        ordinal = 0
+        results.replaceChildren()
+    }
+
+    function showNotice(icon, text) {
+        const box = document.createElement("div")
+        box.className = "oc-empty"
+
+        const emoji = document.createElement("span")
+        emoji.textContent = icon
+        const message = document.createElement("p")
+        message.textContent = text
+
+        box.append(emoji, message)
+        results.appendChild(box)
+    }
+
+    // slices
+
     let loading = false
 
     async function fetchSlice(offset, replace) {
@@ -121,18 +220,20 @@ document.addEventListener("DOMContentLoaded", () => {
         more.disabled = true
 
         try {
-            const query = params()
-            query.set("offset", String(offset))
-            const res = await fetch(`${API}/discovery?${query}`)
-            if (!res.ok) return
-            const data = await res.json()
+            const data = await request(DISCOVERY, { ...payload(), offset })
 
-            if (replace) results.innerHTML = data.html
-            else results.insertAdjacentHTML("beforeend", data.html)
+            if (replace) clearCards()
+            appendCards(data.cards)
 
-            resolveIcons(results)
+            if (data.empty) results.insertAdjacentHTML("beforeend", data.empty)
             more.dataset.offset = String(data.next_offset)
             more.hidden = !data.has_more
+        } catch {
+            if (!replace) return
+
+            clearCards()
+            showNotice("⚠️", config.i18n?.error || "")
+            more.hidden = true
         } finally {
             loading = false
             more.disabled = false
@@ -140,8 +241,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function applyResults() {
-        const query = params()
-        history.pushState(null, "", query.toString() ? `/?${query}` : "/")
+        const params = urlParams()
+        history.pushState(null, "", params.toString() ? `/?${params}` : "/")
         fetchSlice(0, true)
     }
 
@@ -173,16 +274,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const q = search.value.trim()
         if (!q) { hideSuggestions(); return }
 
-        const query = new URLSearchParams()
-        query.set("q", q)
-        filterParams(query)
-        query.delete("sort")
+        const data = filterPayload({ q })
+        delete data.sort
 
         try {
-            const res = await fetch(`${API}/discovery/suggestions?${query}`)
-            if (!res.ok) return
-            const data = await res.json()
-            renderSuggestions(data.suggestions || [])
+            const result = await request(SUGGESTIONS, data)
+            renderSuggestions(result.suggestions || [])
         } catch {}
     }
 
@@ -248,7 +345,7 @@ document.addEventListener("DOMContentLoaded", () => {
         fetchSlice(parseInt(more.dataset.offset || "0", 10), false)
     })
 
-    // initial state from URL + first paint icons
+    // initial state from URL
 
     function syncFromUrl() {
         const url = new URLSearchParams(window.location.search)
@@ -275,8 +372,9 @@ document.addEventListener("DOMContentLoaded", () => {
         syncFilters()
     }
 
+    results.classList.add("oc-grid-live")
     syncFromUrl()
-    resolveIcons(results)
+    fetchSlice(0, true)
 
     if (avatar) {
         fetch("/users/api/v1/profile/pp", { credentials: "include" })
