@@ -1,0 +1,887 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import info, warning %}
+
+{% block title %}SQLAlchemy — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Extensions</span>
+        <h1 class="doc-h1">SQLAlchemy</h1>
+        <p class="doc-lead">
+            In this chapter we will talk about one of the most important features of a web
+            application: Databases! We are assuming that you are already familiar with
+            <a href="https://www.sqlalchemy.org/">SQLAlchemy V2</a> and only explain how
+            to work with our built-in sqlalchemy extension.
+        </p>
+
+        <h2>Your first model</h2>
+        <p>
+            Like Flask-SQLAlchemy our extension does provide its own Model class. So you do not need
+            to set up your own DeclarativeBase. But of course you are not forced to stick with ours.
+            We will show you a quick example of using your own <code>db</code> instance in the end of
+            this chapter.
+            <br><br>
+            For now let's just get started by creating your first simple model:
+        </p>
+
+        {{ code(
+            "fluid/models.py", "python",
+            '''from webfluid.core.ext import db
+from sqlalchemy.orm import Mapped, mapped_column
+
+
+class MyModel(db.Model):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    value: Mapped[str]
+
+    def __init__(self, value: str):
+        self.value = value'''
+        ) }}
+
+        <h2>Integrating SQLAlchemy</h2>
+        <p>
+            Now you can start using your model inside your application. Our extension
+            provides sync and async utility. So when you configure your database uris,
+            <strong>do not add the driver package to the uri string</strong>. The framework
+            does that for you. So your config should look like this:
+        </p>
+
+        {{ code(
+            "app_configs/app.ini", "ini",
+            '''[general]
+SECRET_KEY = supersecret
+
+[data]
+DATABASE_URI = sqlite:///app.db
+
+[extensions]
+EXT_SCHEDULING = 0
+EXT_SQLALCHEMY = 1'''
+        ) }}
+
+        <p>
+            Our SQLAlchemy extension will then derive the sync and async engine with
+            their correct driver from your database uri. We provide this functionality for
+            the most common dialects: sqlite, postgresql and mysql.
+            <br><br>
+            Only the leading scheme is rewritten, so a path segment, a database name, a user or a
+            password that happens to contain the word <code>sqlite</code>, <code>postgresql</code> or
+            <code>mysql</code> comes through untouched.
+            <br><br>
+            Both engines are created lazily, on the first executor that actually needs them. So a bind you
+            only ever touch synchronously never opens an async connection pool on the side. Whatever you
+            put into <code>SQLALCHEMY_ENGINE_OPTIONS</code> is forwarded to both of them; it defaults to
+            <code>{ "pool_pre_ping": True, "pool_recycle": 3600 }</code>. And what is opened lazily is
+            closed deliberately: the extension registers a shutdown hook that disposes the sync and the
+            async engine of every bind, so a stopped app leaves no pool behind it.
+            <br><br>
+            Alright, now that we've everything in place, we can start working with your model.
+            Our extension provides an executor that simplifies your work with sqlalchemy:
+        </p>
+
+        {{ code(
+            "main.py", "python",
+            '''from webfluid import Fluid
+from webfluid.core.config import register_config
+from webfluid.core.ext import scheduler, db
+from fastapi import Request
+from fastapi.responses import HTMLResponse
+from fastapi.exceptions import HTTPException
+from apscheduler.triggers.interval import IntervalTrigger
+from sqlalchemy import select
+
+from extension.main import MyExtension
+from fluid.jobs import heart
+from fluid.models import MyModel
+
+
+@register_config(10)
+class MyConfig:
+    SESSION_COOKIE_SECURE = True
+
+    MYEXT_BAR = "crazy"
+
+    # Usually you would define the SQLALCHEMY_DATABASE_URI, but the DATABASE_URI value
+    # from the runtimes\' environment is already the default:
+
+    # SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URI", "sqlite:///app.db")
+
+fluid = Fluid(__name__)
+
+my_ext = MyExtension(fluid)
+scheduler.add_job(heart, IntervalTrigger(seconds=5))
+
+
+@fluid.get("/", response_class=HTMLResponse)
+async def home():
+    return await fluid.render(
+        "index.html",
+        title="Hello World!",
+        name="my friend"
+    )
+
+
+@fluid.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
+@fluid.get("/my-model")
+async def get_model(request: Request):
+    model_id = request.query_params.get("id")
+    if not model_id:
+        raise HTTPException(status_code=400, detail="Bad Request")
+
+    async with db.async_executor() as e:
+        # Here you should note one of WebFluids opinions:
+        # The following call returns a ScalarResult per default.
+        # You need to set scalars=False if you do not want that.
+        results = await e.exec(
+            select(MyModel).where(MyModel.id == model_id),
+            # scalars=False
+        )
+        result = results.first()
+        if not result:
+            raise HTTPException(status_code=404, detail="Model not found")
+
+        return {
+            "model_id": model_id,
+            "value": result.value
+        }
+
+
+@fluid.post("/my-model")
+async def add_model(request: Request):
+    value = request.query_params.get("value")
+    if not value:
+        raise HTTPException(status_code=400, detail="Bad Request")
+
+    async with db.async_executor() as e:
+        model = await e.insert(
+            MyModel(value),
+            flush=True
+            # We want to flush so that we can return the id.
+            # This is False per default.
+        )
+        return {
+            "model_id": model.id,
+            "value": model.value
+        }
+
+    # The extension handles the lifecycle of your session for you.
+
+    # All changes and updates you make inside the executor context
+    # are committed as soon as the interpreter leaves its scope.
+
+    # If an exception occurs inside that scope, the session will
+    # be rolled back automatically for you and will always be closed.
+
+
+if __name__ == "__main__":
+    # For now, you do not need to understand the following lines.
+    # We will explain them in the next paragraph.
+    bind = db.get_bind_for_model(MyModel)
+    db.Model.metadata.create_all(bind.sync_engine)
+
+    fluid.mix()'''
+        ) }}
+
+        {{ code(
+            "fluid/templates/index.html", "html",
+            """&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+    &lt;title&gt;{{ title }}&lt;/title&gt;
+
+    &lt;script&gt;
+        function healthCheck() {
+            const result = document.getElementById(&#39;result&#39;)
+            fetch(&#39;/health&#39;).then(res =&gt; {
+                if (res.ok) result.style.color = &#39;green&#39;
+                else result.style.color = &#39;red&#39;
+                return res.json()
+            }).then(data =&gt; {
+                result.innerText = JSON.stringify(data)
+                setTimeout(() =&gt; result.innerText = &#39;&#39;, 2000)
+            })
+        }
+
+        function addModel() {
+            const value = document.getElementById(&#39;value&#39;)
+            const newModel = document.getElementById(&#39;newModel&#39;)
+
+            const clear = () =&gt; setTimeout(() =&gt; {
+                value.value = null
+                newModel.innerText = &#39;&#39;
+            }, 2000)
+
+            if (!value.value) {
+                newModel.style.color = &#39;red&#39;
+                newModel.innerText = &#39;Enter a value first!&#39;
+                clear()
+                return
+            }
+
+            fetch(&#39;/my-model&#39;, {
+                method: &#39;POST&#39;,
+                headers: { &#39;Content-Type&#39;: &#39;application/json&#39; },
+                body: JSON.stringify({ value: value.value })
+            }).then(res =&gt; {
+                if (res.ok) newModel.style.color = &#39;green&#39;
+                else newModel.style.color = &#39;red&#39;
+                return res.json()
+            }).then(data =&gt; {
+                newModel.innerText = JSON.stringify(data)
+                clear()
+            })
+        }
+
+        function getModel() {
+            const id = document.getElementById(&#39;id&#39;)
+            const modelValue = document.getElementById(&#39;modelValue&#39;)
+
+            const clear = () =&gt; setTimeout(() =&gt; {
+                id.value = null
+                modelValue.innerText = &#39;&#39;
+            }, 2000)
+
+            if (!id.value) {
+                modelValue.style.color = &#39;red&#39;
+                modelValue.innerText = &#39;Provide an id first!&#39;
+                clear()
+                return
+            }
+
+            fetch(`/my-model?id=${id.value}`).then(res =&gt; {
+                if (res.ok) modelValue.style.color = &#39;green&#39;
+                else modelValue.style.color = &#39;red&#39;
+                return res.json()
+            }).then(data =&gt; {
+                modelValue.innerText = JSON.stringify(data)
+                clear()
+            })
+        }
+    &lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;p&gt;Hello &lt;b&gt;{{ name }}&lt;/b&gt;!&lt;/p&gt;
+
+    &lt;button onclick=&quot;healthCheck()&quot;&gt;Health Check&lt;/button&gt;
+    &lt;p id=&quot;result&quot;&gt;&lt;/p&gt;
+
+    &lt;p&gt;{{ my_ext() }}&lt;/p&gt;
+
+    &lt;input id=&quot;value&quot; type=&quot;text&quot; placeholder=&quot;Your value&quot;&gt;
+    &lt;p id=&quot;newModel&quot;&gt;&lt;/p&gt;
+    &lt;button onclick=&quot;addModel()&quot;&gt;Save&lt;/button&gt;
+
+    &lt;br&gt;&lt;br&gt;
+
+    &lt;input id=&quot;id&quot; type=&quot;number&quot; placeholder=&quot;Model id&quot;&gt;
+    &lt;p id=&quot;modelValue&quot;&gt;&lt;/p&gt;
+    &lt;button onclick=&quot;getModel()&quot;&gt;Get Model&lt;/button&gt;
+&lt;/body&gt;
+&lt;/html&gt;"""
+        ) }}
+
+        <h3>What survives the block</h3>
+        <p>
+            Look closely at the <code>add_model</code> handler above: it builds its response
+            <em>inside</em> the executor. It does not have to. Both session factories run with
+            <code>expire_on_commit=False</code>, which means the rows an executor hands you keep their
+            loaded column values after it commits and closes. So this reads just as well:
+        </p>
+
+        {{ code(
+            "example", "python",
+            '''async with db.async_executor(model=MyModel) as e:
+    model = await e.insert(MyModel(value), flush=True)
+
+# The session is closed and committed by now, but the row is still readable:
+return {"model_id": model.id, "value": model.value}'''
+        ) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            What does <em>not</em> survive is anything the row has not loaded yet &mdash; a lazy
+            relationship, for instance, has no session left to load itself from. Load what you need while
+            the executor is open, then take the object with you.
+        """) }}
+
+        <p>
+            Now you have successfully integrated SQLAlchemy into your application.
+            But you may want to find out what the hell that <code>db.get_bind_for_model(MyModel)</code>
+            is...
+        </p>
+
+        <h2>Working with binds</h2>
+        <p>
+            Like Flask-SQLAlchemy our extension is able to handle multiple binds using bind keys.
+            You can define binds by setting <code>MyModel.__bind_key__</code> and adding the SQLALCHEMY_BINDS
+            dictionary to your config.
+            <br><br>
+            Here we have a quick example of wiring it all up:
+        </p>
+
+        {{ code(
+            "app_configs/app.ini", "ini",
+            '''[general]
+SECRET_KEY = supersecret
+
+[data]
+DATABASE_URI = sqlite:///app.db
+TEST_DB_URI = sqlite:///test.db
+
+[extensions]
+EXT_SCHEDULING = 0
+EXT_SQLALCHEMY = 1'''
+        ) }}
+
+        {{ code(
+            "fluid/models.py", "python",
+            '''from webfluid.core.ext import db
+from sqlalchemy.orm import Mapped, mapped_column
+
+
+class MyModel(db.Model):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    value: Mapped[str]
+
+    def __init__(self, value: str):
+        self.value = value
+
+
+class SecondModel(db.Model):
+    __bind_key__ = "test"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    value: Mapped[str]
+
+    def __init__(self, value: str):
+        self.value = value'''
+        ) }}
+
+        {{ code(
+            "main.py", "python",
+            '''from webfluid import Fluid
+from webfluid.core.config import register_config
+from webfluid.core.ext import scheduler, db
+from fastapi import Request
+from fastapi.responses import HTMLResponse
+from fastapi.exceptions import HTTPException
+from apscheduler.triggers.interval import IntervalTrigger
+from sqlalchemy import select
+import os
+
+from extension.main import MyExtension
+from fluid.jobs import heart
+from fluid.models import MyModel, SecondModel
+
+
+@register_config(10)
+class MyConfig:
+    SESSION_COOKIE_SECURE = True
+
+    MYEXT_BAR = "crazy"
+
+    SQLALCHEMY_BINDS = {
+        "test": os.getenv("TEST_DB_URI", "sqlite:///test.db")
+    }
+
+fluid = Fluid(__name__)
+
+my_ext = MyExtension(fluid)
+scheduler.add_job(heart, IntervalTrigger(seconds=5))
+
+
+@fluid.get("/", response_class=HTMLResponse)
+async def home():
+    return await fluid.render(
+        "index.html",
+        title="Hello World!",
+        name="my friend"
+    )
+
+
+@fluid.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
+@fluid.get("/my-model")
+async def get_model(request: Request):
+    model_id = request.query_params.get("id")
+    if not model_id:
+        raise HTTPException(status_code=400, detail="Bad Request")
+
+    # The context manager resolves the correct bind for you:
+    async with db.async_executor(model=SecondModel) as e:
+        results = await e.exec(
+            select(SecondModel).where(SecondModel.id == model_id)
+        )
+        result = results.first()
+        if not result:
+            raise HTTPException(status_code=404, detail="Model not found")
+
+        return {
+            "model_id": model_id,
+            "value": result.value
+        }
+
+
+@fluid.post("/my-model")
+async def add_model(request: Request):
+    data = await request.json()
+    value = data.get("value")
+    if not value:
+        raise HTTPException(status_code=400, detail="Bad Request")
+
+    async with db.async_executor(model=SecondModel) as e:
+        model = await e.insert(
+            SecondModel(value),
+            flush=True
+        )
+        return {
+            "model_id": model.id,
+            "value": model.value
+        }
+
+
+if __name__ == "__main__":
+    # bind = db.get_bind_for_model(MyModel)
+    # bind.metadata.create_all(bind.sync_engine)
+
+    bind = db.get_bind_for_model(SecondModel)
+    bind.metadata.create_all(bind.sync_engine)
+
+    fluid.mix()'''
+        ) }}
+
+        <p>
+            Notice that we create the tables through <code>bind.metadata</code> and not
+            <code>db.Model.metadata</code> here. Every bind keeps its own metadata, so a model that is
+            attached to a bind key lives in that bind's metadata, not in the default one. For the default
+            bind the two are the same, which is why the single database example above could get away with
+            <code>db.Model.metadata</code>.
+        </p>
+
+        <h3>Dynamically setting binds</h3>
+        <p>
+            In some cases you may want to define the bind of your model dynamically.
+            For example, by using a config value. Then you would use <code>MyModel.set_bind</code>
+            and do something like this:
+        </p>
+
+        {{ code(
+            "main.py", "python",
+            '''from webfluid import Fluid
+from webfluid.core.config import register_config
+from webfluid.core.ext import scheduler, db
+from fastapi import Request
+from fastapi.responses import HTMLResponse
+from fastapi.exceptions import HTTPException
+from apscheduler.triggers.interval import IntervalTrigger
+from sqlalchemy import select
+import os
+
+from extension.main import MyExtension
+from fluid.jobs import heart
+from fluid.models import MyModel, SecondModel
+
+
+@register_config(10)
+class MyConfig:
+    SESSION_COOKIE_SECURE = True
+
+    MYEXT_BAR = "crazy"
+
+    SQLALCHEMY_BINDS = {
+        "test": os.getenv("TEST_DB_URI", "sqlite:///test.db"),
+        "dynamic": os.getenv("DYNAMIC_URI", "sqlite:///dynamic.db")
+    }
+    MODEL_BIND = "dynamic"
+
+fluid = Fluid(__name__)
+
+my_ext = MyExtension(fluid)
+scheduler.add_job(heart, IntervalTrigger(seconds=5))
+
+# Now you can set your models bind dynamically.
+# The "default" string is the key that resolves to the
+# SQLALCHEMY_DATABASE_URI bind:
+MyModel.set_bind(fluid.config.get("MODEL_BIND", "default"))
+
+
+@fluid.get("/", response_class=HTMLResponse)
+async def home():
+    return await fluid.render(
+        "index.html",
+        title="Hello World!",
+        name="my friend"
+    )
+
+
+@fluid.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
+@fluid.get("/my-model")
+async def get_model(request: Request):
+    model_id = request.query_params.get("id")
+    if not model_id:
+        raise HTTPException(status_code=400, detail="Bad Request")
+
+    async with db.async_executor(model=MyModel) as e:
+        results = await e.exec(
+            select(MyModel).where(MyModel.id == model_id)
+        )
+        result = results.first()
+        if not result:
+            raise HTTPException(status_code=404, detail="Model not found")
+
+        return {
+            "model_id": model_id,
+            "value": result.value
+        }
+
+
+@fluid.post("/my-model")
+async def add_model(request: Request):
+    data = await request.json()
+    value = data.get("value")
+    if not value:
+        raise HTTPException(status_code=400, detail="Bad Request")
+
+    async with db.async_executor(model=MyModel) as e:
+        model = await e.insert(
+            MyModel(value),
+            flush=True
+        )
+        return {
+            "model_id": model.id,
+            "value": model.value
+        }
+
+
+if __name__ == "__main__":
+    bind = db.get_bind_for_model(MyModel)
+    bind.metadata.create_all(bind.sync_engine)
+
+    fluid.mix()'''
+        ) }}
+
+        <h2>Changing table names</h2>
+        <p>
+            As you may have already thought, SQLAlchemy resolves table names by
+            converting your models' name to snake case like the Flask extension does.
+            And so you can change the models' table name by setting <code>__tablename__</code>
+            as well:
+        </p>
+
+        {{ code(
+            "fluid/models.py", "python",
+            '''from webfluid.core.ext import db
+from sqlalchemy.orm import Mapped, mapped_column
+
+
+class MyModel(db.Model):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    value: Mapped[str]
+
+    def __init__(self, value: str):
+        self.value = value
+
+
+class SecondModel(db.Model):
+    __tablename__ = "my_table"
+    __bind_key__ = "test"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    value: Mapped[str]
+
+    def __init__(self, value: str):
+        self.value = value'''
+        ) }}
+
+        <h2>Reusing the current executor</h2>
+        <p>
+            An executor is more than a context manager &mdash; it is a proper context, tracked per task.
+            So besides opening a fresh one, you can reach the executor that is <em>already</em> open in the
+            current scope. That matters as soon as your code stops living in a single handler: the moment a
+            handler calls a helper that also touches the database, you have to decide whether that helper
+            gets its own transaction or joins the one you already have.
+        </p>
+
+        <p>Three tools cover that:</p>
+        <ul>
+            <li>
+                <code>db.current_executor</code> / <code>db.current_async_executor</code> &mdash; the
+                executor open in this scope, or a <code>RuntimeError</code> if there is none.
+            </li>
+            <li>
+                <code>db.ensured_executor(...)</code> / <code>db.ensured_async_executor(...)</code> &mdash;
+                yield the current executor if one is open, otherwise open a new one. Reach for it when you
+                are not sure a session exists yet and don't want to force a second one.
+            </li>
+            <li>
+                <code>Executor.outer()</code> / <code>AsyncExecutor.outer()</code> &mdash; from inside a
+                nested executor, step back into the one that was open before it.
+            </li>
+        </ul>
+
+        <p>
+            The everyday tool is <code>ensured_async_executor</code>. Write your helpers with it and they
+            work either way &mdash; standalone, or folded into a caller's transaction:
+        </p>
+
+        {{ code(
+            "example", "python",
+            '''from webfluid.core.ext import db
+from sqlalchemy import select, func
+
+from fluid.models import MyModel
+
+
+async def count_models() -> int:
+    # Joins whatever executor is open around us, opens one if none is.
+    async with db.ensured_async_executor(model=MyModel) as e:
+        result = await e.exec(select(func.count(MyModel.id)), scalars=False)
+        return result.scalar()'''
+        ) }}
+
+        {{ code(
+            "example", "python",
+            '''async def add_and_count(value: str):
+    async with db.async_executor(model=MyModel) as e:
+        await e.insert(MyModel(value), flush=True)
+
+        # One session, one transaction: the count already sees our insert,
+        # because count_models joined the executor instead of opening
+        # a second one that would not see uncommitted rows.
+        return await count_models()'''
+        ) }}
+
+        <p>
+            <code>current_async_executor</code> is the sharper version of the same idea: it does not open
+            anything, it just hands you the active executor and raises if there is none. Use it when the
+            caller <em>must</em> have opened one &mdash; it turns a silent second transaction into a loud
+            programming error.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            Do not assume the framework left a session open for you. Dependencies that load something from
+            the database &mdash; the Security battery's <code>current_user</code>, for instance &mdash;
+            deliberately release their connection before handing you the result, so they do not hold a pool
+            slot for the whole request. In a route handler there is no current executor unless you opened
+            one, which is exactly why the <code>ensured_</code> variants exist.
+        """) }}
+
+        <p>
+            Finally the case the context nesting was built for: you open a <strong>new</strong> executor for
+            a model on a different bind, but still need the outer session for a moment. Opening the new
+            executor makes it the current one, so <code>outer()</code> is how you reach back:
+        </p>
+
+        {{ code(
+            "example", "python",
+            '''from webfluid.core.ext import db
+from webfluid.extensions.sqlalchemy import AsyncExecutor
+
+from fluid.models import MyModel, AuditEntry   # AuditEntry sits on the "audit" bind
+
+
+async def record(value: str):
+    async with db.async_executor(model=MyModel) as outer:
+        model = await outer.insert(MyModel(value), flush=True)
+
+        # A brand new session for the audit bind becomes the current one:
+        async with db.async_executor(model=AuditEntry) as e:
+            entry = AuditEntry(model_id=model.id, action="created")
+            await e.insert(entry, flush=True)
+
+            # Step back into the model session for a moment without
+            # closing this one. outer() is a plain (sync) context manager:
+            with AsyncExecutor.outer() as outer_e:
+                model.value = f"{value} #{entry.id}"
+                await outer_e.flush()
+
+        return entry.id'''
+        ) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            <code>outer()</code> swaps the active executor back to the enclosing one for the duration of the
+            <code>with</code> block, then restores the inner one. It is a synchronous context manager even
+            for <code>AsyncExecutor</code>, since it only moves the context pointer &mdash; not the session.
+            Pass a <code>depth</code> to step back more than one level, and expect <code>None</code> if there
+            is no outer executor.
+        """) }}
+
+        <h2>Leave the framework defaults</h2>
+        <p>
+            Like we've mentioned earlier, you are not forced to stick with our defaults.
+            You can wire up extensions yourself if you do not want to rely on WebFluids conventions.
+            Keep in mind that this may break the frameworks' functionality if you do not know what you are doing.
+            <br><br>
+            Anyway, we will show you how to escape from our conventions with the SQLAlchemy extension. The
+            same counts for every other built-in extension as well. So in the following chapters we will only
+            tell you what parameters you can pass to our extensions if you want to leave their defaults.
+            <br><br>
+            Okay, but now let's set up your own conventions. The SQLAlchemy extension only supports passing
+            your own <code>DeclarativeBase</code>. So this will be exactly what we are doing:
+        </p>
+
+        {{ code(
+            "app_configs/app.ini", "ini",
+            '''[general]
+SECRET_KEY = supersecret
+
+[data]
+DATABASE_URI = sqlite:///app.db
+
+[extensions]
+EXT_SCHEDULING = 0
+EXT_SQLALCHEMY = 0'''
+        ) }}
+
+        {{ code(
+            "fluid/ext.py", "python",
+            '''from webfluid.extensions import SQLAlchemy
+from sqlalchemy.orm import DeclarativeBase
+
+
+class MyBase(DeclarativeBase):
+    __tablename__: str
+    __bind_key__: str
+
+    # Setting up your base like this will make it necessary
+    # to define the __tablename__ for each of your models.
+
+    # This is just an example, and we are assuming that you
+    # know what you are doing if you are playing around with
+    # this kind of stuff here.
+
+db = SQLAlchemy(base=MyBase)'''
+        ) }}
+
+        {{ code(
+            "fluid/models.py", "python",
+            '''from sqlalchemy.orm import Mapped, mapped_column
+
+from fluid.ext import db
+
+
+class MyModel(db.Model):
+    __tablename__ = "model"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    value: Mapped[str]
+
+    def __init__(self, value: str):
+        self.value = value'''
+        ) }}
+
+
+        {{ code(
+            "main.py", "python",
+            '''from webfluid import Fluid
+from webfluid.core.config import register_config
+from webfluid.core.ext import scheduler
+from fastapi import Request
+from fastapi.responses import HTMLResponse
+from fastapi.exceptions import HTTPException
+from apscheduler.triggers.interval import IntervalTrigger
+from sqlalchemy import select
+import os
+
+from extension.main import MyExtension
+from fluid.jobs import heart
+from fluid.models import MyModel
+from fluid.ext import db
+
+
+@register_config(10)
+class MyConfig:
+    SESSION_COOKIE_SECURE = True
+
+    MYEXT_BAR = "crazy"
+
+fluid = Fluid(__name__)
+
+my_ext = MyExtension(fluid)
+scheduler.add_job(heart, IntervalTrigger(seconds=5))
+
+
+@fluid.get("/", response_class=HTMLResponse)
+async def home():
+    return await fluid.render(
+        "index.html",
+        title="Hello World!",
+        name="my friend"
+    )
+
+
+@fluid.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
+@fluid.get("/my-model")
+async def get_model(request: Request):
+    model_id = request.query_params.get("id")
+    if not model_id:
+        raise HTTPException(status_code=400, detail="Bad Request")
+
+    async with db.async_executor(model=MyModel) as e:
+        results = await e.exec(
+            select(MyModel).where(MyModel.id == model_id)
+        )
+        result = results.first()
+        if not result:
+            raise HTTPException(status_code=404, detail="Model not found")
+
+        return {
+            "model_id": model_id,
+            "value": result.value
+        }
+
+
+@fluid.post("/my-model")
+async def add_model(request: Request):
+    data = await request.json()
+    value = data.get("value")
+    if not value:
+        raise HTTPException(status_code=400, detail="Bad Request")
+
+    async with db.async_executor(model=MyModel) as e:
+        model = await e.insert(
+            MyModel(value),
+            flush=True
+        )
+        return {
+            "model_id": model.id,
+            "value": model.value
+        }
+
+
+if __name__ == "__main__":
+    # Now you have to expand the fluid yourself:
+    db.expand_fluid(fluid)
+
+    bind = db.get_bind_for_model(MyModel)
+    db.Model.metadata.create_all(bind.sync_engine)
+
+    fluid.mix()'''
+        ) }}
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/ext/migrate">Migrate</a>.</p>
+    </article>
+{% endblock %}

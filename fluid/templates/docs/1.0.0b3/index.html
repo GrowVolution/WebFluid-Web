@@ -1,0 +1,625 @@
+{% extends "docs/base_overview.html" %}
+{% from "docs/partials/_callout.html" import warning %}
+{% from "docs/partials/_overview.html" import feature, fix, bug, break %}
+
+{% block lead %}
+    Beta 3 is the second stabilisation release, and it does two jobs. First it works through the
+    known-issues list beta 2 published and closes everything that could be closed without moving the
+    shape of the framework &mdash; a mail client that talked plaintext, a URI rewriter that rewrote
+    too much, a <code>url_for</code> that was <code>None</code> off request, a translation that was
+    skipped whenever it happened to equal its source. Then it goes looking for what nobody had
+    reported yet, and finds five security defects in a default configuration. The largest of them is
+    the reason this release is not, as planned, one with no breaking changes at all: <strong>Jinja
+    autoescaping is on now</strong>, and that is the one line every application rendering HTML has
+    to read before upgrading.
+{% endblock %}
+
+{% block features %}
+    <div class="doc-list">
+        {{ feature(
+            "A socket that knows who is asking",
+            """
+                The events websocket handler now runs inside a <code>FluidContext</code> carrying the
+                connection, so a query answered over <code>/ws/events</code> sees the same request
+                surface an HTTP handler does. <code>FluidContext.current().request</code> is the
+                <code>WebSocket</code>, and because both it and <code>Request</code> are Starlette
+                <code>HTTPConnection</code>s, the signed-in user, the browser locale and
+                <code>url_for</code> all resolve against it unchanged. A public query no longer has to
+                take a principal id as payload &mdash; which was the only way to personalise a socket
+                answer before, and one no server should ever have accepted.
+            """
+        ) }}
+
+        {{ feature(
+            "A gate for addresses nobody confirmed",
+            """
+                A new <code>EmailVerifiedGate</code> sits between the default gate and
+                <code>require_2fa</code>. Every guard past <code>require_user</code> &mdash;
+                <code>require_2fa</code>, <code>require_admin</code>, every role and permission guard
+                &mdash; answers <code>401 EMAIL_NOT_VERIFIED</code> for a user whose <code>email</code>
+                is unset or whose <code>email_verified</code> is <code>False</code>. Bare
+                <code>require_user</code> is the only guard left untouched, which is what makes a
+                verification flow reachable. The predicate is exported as
+                <code>UserService.email_verified</code>, next to <code>has_2fa</code> and
+                <code>is_admin</code>.
+            """
+        ) }}
+
+        {{ feature(
+            "Bundles, and a channel that means &ldquo;newest&rdquo;",
+            """
+                <code>wf ocean install</code> learned three options. <code>--bundle/-b</code> takes a
+                bundle id and is exactly equivalent to naming every package in it; leading zeros are
+                optional, a package requested twice is installed once, and an explicit
+                <code>id==version</code> pin beats the bundle's plain id. <code>--pre/-p</code>
+                resolves the highest prerelease of any channel, so a package at
+                <code>1.1rc1</code> installs the candidate while one still at <code>1.1b2</code>
+                installs the beta. <code>--prefer-stable/-ps</code> takes the latest stable and only
+                falls back to a prerelease when there is none. <code>wf ocean search</code> now prints
+                the bundle id as its first column, zero padded to six digits, which is how bundles are
+                addressed everywhere else.
+            """
+        ) }}
+
+        {{ feature(
+            "Migrations that can alter a SQLite table",
+            """
+                Both generated <code>env.py</code> templates now pass
+                <code>render_as_batch</code> whenever the target dialect is SQLite, online and offline.
+                SQLite has no real <code>ALTER TABLE</code>, so a column rename or a type change used
+                to fail on exactly the database every project develops against. Alembic's batch mode
+                rebuilds the table instead. Existing migration environments keep the old
+                <code>env.py</code> &mdash; it is a template, generated once by
+                <code>wf migrate init</code>, so an established project has to copy the two lines in
+                by hand.
+            """
+        ) }}
+
+        {{ feature(
+            "Connections that get closed",
+            """
+                Database engines were created lazily and then never disposed, so every pool stayed
+                open until the process died. <code>SQLAlchemy.dispose()</code> is registered as a
+                shutdown hook and closes the sync and the async engine of every bind;
+                <code>Bind.dispose</code> is idempotent and lets a disposed bind be used again. On the
+                same theme, <code>SocketManager</code> no longer keeps a dead subscription entry per
+                disconnect &mdash; and every browser refresh is a disconnect.
+            """
+        ) }}
+
+        {{ feature(
+            "A skill, shipped in the package",
+            """
+                <code>webfluid/.agents/skills/webfluid</code> ships inside the distribution: a
+                <code>SKILL.md</code> plus six reference files covering project setup, the runtime,
+                the batteries, Additives, the surface and the current list of live defects. An agent
+                working in your repository picks it up from the installed package, and it points at
+                these docs for anything exhaustive. It is the same material as the Markdown edition of
+                this site, cut for working in a codebase rather than reading one.
+            """
+        ) }}
+
+        {{ feature(
+            "244 tests, and a file named after the audit",
+            """
+                Up from 160. <code>tests/test_hardening.py</code> is new and pins all five security
+                fixes: an unregistered or traversing <code>vite_ns</code>, a <code>kid</code> outside
+                the rotation's shape, a forwarded header the limiter must ignore, every offsite
+                redirect shape, and a CSRF payload of the wrong type.
+                <code>test_rendering.py</code> covers escaping in both directions, and
+                <code>test_websocket.py</code> runs six malformed message shapes and a binary frame
+                against a real uvicorn and asserts the socket is still usable afterwards.
+            """
+        ) }}
+    </div>
+{% endblock %}
+
+{% block fixes %}
+    <div class="doc-list">
+        {{ fix(
+            "Templates escape what you put in them",
+            """
+                The Jinja environment was built without <code>autoescape</code>, so every
+                <code>&#123;&#123; value &#125;&#125;</code> in every template of every application was
+                interpolated verbatim &mdash; an XSS hole anywhere user input reached a page.
+                Autoescaping is on now through
+                <code>select_autoescape((&quot;html&quot;, &quot;htm&quot;, &quot;xml&quot;, &quot;xhtml&quot;, &quot;svg&quot;))</code>, which also
+                covers every <code>render_string</code> source. That the framework already wrapped its
+                own injected HTML in <code>markupsafe.Markup</code> is what made the switch safe to
+                throw. Templates with any other suffix &mdash; <code>.txt</code>, <code>.md</code>,
+                <code>.json</code> &mdash; are not escaped, so plain-text mail bodies are unaffected.
+                See the breaking change below for what this costs you.
+            """
+        ) }}
+
+        {{ fix(
+            "A cookie that could read your config",
+            """
+                <code>asset_catch</code> is registered as a catch-all <code>GET /&#123;path:path&#125;</code>
+                whenever a Vite frontend exists, in production as well as debug, and it resolved the
+                requested file under the <code>vite_ns</code> <em>cookie</em> &mdash; which the client
+                controls and which nothing validated. No traversal was even required: an empty
+                <code>vite_ns</code> rooted the lookup at <code>project_root</code>, so
+                <code>GET /app_configs/&lt;app&gt;.ini</code> returned the application's config,
+                <code>SECRET_KEY</code> included. The namespace is checked against the frontends
+                actually registered now, and the resolved path must be a file under
+                <code>project_root</code>.
+            """
+        ) }}
+
+        {{ fix(
+            "A key id that named any cache entry",
+            """
+                <code>Decoder</code> interpolated the unverified <code>kid</code> header straight into
+                <code>cache.get(f&quot;jwt:&#123;kid&#125;&quot;)</code> and used whatever came back as the HMAC
+                secret. <code>kid: &quot;current&quot;</code> therefore resolved to <code>jwt:current</code>,
+                whose value is the <em>key id</em> &mdash; a uuid published in the header of every
+                token the application issues. Anyone holding one valid token could read that id and
+                sign their own tokens with it, for any <code>sub</code> and any grant. A
+                <code>kid</code> that is not the 32 lowercase hex characters a rotation produces is
+                rejected before any lookup now.
+            """
+        ) }}
+
+        {{ fix(
+            "A rate limit you could not hit",
+            """
+                The limiter used slowapi's <code>get_ipaddr</code>, which prefers an
+                <code>X_Forwarded_For</code> request header over the real peer. Since nothing verified
+                it, a client could send a different value on every request and never hit a limit;
+                behind a real proxy the same function put every client in one bucket, because that
+                header spelling is not the one proxies send. The key is <code>get_remote_address</code>
+                now, and <code>PROXY_FIX</code> with <code>PROXY_TRUSTED_HOSTS</code> is the supported
+                &mdash; and only &mdash; way a forwarded header changes <code>request.client</code>.
+            """
+        ) }}
+
+        {{ fix(
+            "A login that could land anywhere",
+            """
+                <code>?redirect=</code> was stored in the session by the OAuth service and handed to
+                <code>RedirectResponse</code> unchanged, so a crafted login link sent the user to any
+                origin after a successful sign-in. Only a same-site absolute path survives now; an
+                absolute URL, a protocol-relative <code>//host</code> and a <code>/&#92;host</code> all
+                collapse to <code>/</code>.
+            """
+        ) }}
+
+        {{ fix(
+            "Drivers inserted once, not everywhere",
+            """
+                <code>database_uris</code> inserted the driver with a plain <code>str.replace</code>,
+                so every occurrence of the scheme word in a URI was rewritten rather than the leading
+                one. <code>sqlite:///data/sqlite/app.db</code> came back as
+                <code>sqlite+aiosqlite:///data/sqlite+aiosqlite/app.db</code>, and a MySQL database
+                named <code>mysql_prod</code>, a user named <code>postgresql</code> or a password
+                containing the scheme word got the same treatment. Only the scheme prefix is replaced
+                now.
+            """
+        ) }}
+
+        {{ fix(
+            "Mail that actually uses TLS, and says so when it cannot",
+            """
+                <code>SyncManager</code> stored <code>MAIL_USE_TLS</code> and then opened a plain
+                <code>smtplib.SMTP</code> connection, so <code>mail.send()</code> against a server
+                configured for implicit TLS talked plaintext with the credentials in it. It opens an
+                <code>SMTP_SSL</code> connection now. Both clients also connected and logged in
+                <em>before</em> the <code>try</code> that wraps SMTP errors, so a refused greeting or a
+                rejected password escaped as a raw library error instead of the documented
+                <code>FrameworkException</code>. And a <code>fake_async=True</code> send ran in a bare
+                thread nobody joined, so a failure vanished with no entry in the log; the thread body
+                reports through the framework logger now and the thread is a daemon.
+            """
+        ) }}
+
+        {{ fix(
+            "Sockets that survive what you send them",
+            """
+                Neither framework socket survived a message that was not a JSON object &mdash; a
+                number, a boolean, <code>null</code> or a binary frame tore the connection down for
+                the visitor who sent it &mdash; and <code>WebSocketDisconnect</code> escaped the
+                receive loop of both, so every closed tab surfaced as an unhandled exception. Each
+                socket decodes through a <code>_receive</code> that answers a named error now, and
+                wraps dispatch so a handler that raises answers an error and leaves the socket usable.
+                A query that fails answers <code>&#123;&quot;error&quot;: &quot;Query '&lt;name&gt;' failed.&quot;&#125;</code>
+                with the exception logged, rather than <code>&#123;&quot;data&quot;: null&#125;</code>.
+            """
+        ) }}
+
+        {{ fix(
+            "A subscription registry that shrinks again",
+            """
+                <code>SocketManager.leave</code> released the socket but not its subscriptions, so
+                every disconnect left a dead sid behind and the registry grew for the life of the
+                process &mdash; one entry per reconnect, and every browser refresh is a reconnect. It
+                drops the sid from every event now. <code>unsubscribe</code>, in the same corner,
+                checked whether <em>anyone</em> was subscribed rather than the caller, so a client that
+                never subscribed was answered <code>true</code> as long as someone else had.
+            """
+        ) }}
+
+        {{ fix(
+            "url_for outside a request",
+            """
+                Both the framework and the additive context processor built <code>url_for</code> from
+                the request in the current context and handed back <code>None</code> when there was
+                none, so rendering a template from a startup hook, a scheduled job or a mail routine
+                failed with <code>NoneType is not callable</code> rather than a missing name.
+                Off-request <code>url_for</code> resolves through the application's route table now,
+                and <code>external=True</code> prefixes the configured <code>BASE_URL</code>.
+            """
+        ) }}
+
+        {{ fix(
+            "A translation that is allowed to equal its source",
+            """
+                The domain escalation accepted a catalog's answer only when it differed from the
+                string it was given, so a deliberate translation that happens to equal its source
+                &mdash; an English catalog translating <code>Save</code> to <code>Save</code> &mdash;
+                was read as a miss and the next domain in the chain answered instead.
+                <code>MergedTranslations</code> reports hit and miss separately through a new
+                <code>findtext</code> family, and the escalation tests for a miss rather than comparing
+                strings.
+            """
+        ) }}
+
+        {{ fix(
+            "Signals you can declare at import time",
+            """
+                <code>events.create_signal</code> and <code>@events.event</code> created their
+                broadcaster's consumer loop eagerly with <code>asyncio.create_task</code>, so calling
+                either before the application's event loop was running &mdash; the ordinary case for a
+                signal declared at module level, right after <code>Fluid(...)</code> &mdash; raised
+                <code>RuntimeError: no running event loop</code>. An event registered outside a running
+                loop is queued now and wired up from a startup hook once the loop exists. Registering a
+                genuinely <em>new</em> event off-loop <em>after</em> the application has started is the
+                one case this cannot paper over, and it raises a <code>FrameworkException</code> that
+                says so.
+            """
+        ) }}
+
+        {{ fix(
+            "Smaller sharp edges",
+            """
+                <code>resolve_bearer</code> looked its principal up with <code>int(sub)</code>, so a
+                uuid or an email <code>sub</code> came back as a 500 instead of a 401; a token whose
+                <code>kid</code> is not in the cache passed <code>None</code> to the signing library
+                and raised a raw <code>TypeError</code> rather than <code>InvalidTokenError</code>; a
+                CSRF token carrying a validly signed payload of the wrong shape reached
+                <code>.get(&quot;csrf&quot;)</code> and answered 500 instead of
+                <code>403 INVALID_CSRF</code>; <code>wf create app</code> wrote
+                <code>app_configs/&lt;name&gt;.ini</code> in the interpreter's locale encoding, which
+                breaks the moment a config is written on Windows and read anywhere else; and the
+                websocket proxy cancelled its idle pump task without awaiting it.
+            """
+        ) }}
+    </div>
+{% endblock %}
+
+{% block bugs %}
+    <div class="doc-list">
+        {{ bug(
+            "The i18n socket translates in the wrong language",
+            """
+                The events socket got a <code>FluidContext</code> in this release;
+                <code>/ws/i18n</code> did not. Its <code>cache</code> request resolves the connection's
+                locale by hand and answers correctly, but its <code>translate</code> request calls the
+                <code>agettext</code> family with no context and no forced locale, so
+                <code>get_locale()</code> finds nothing to read and falls back to
+                <code>BABEL_DEFAULT_LOCALE</code> every time. The two halves of the same socket
+                disagree. Use the cached catalog (<code>_()</code>, the synchronous client API), which
+                is loaded once per locale and is correct; treat <code>live._()</code> as English-only
+                for now.
+            """
+        ) }}
+
+        {{ bug(
+            "live._p and live._np pass their arguments in the wrong order",
+            """
+                In <code>window.wf.ext.i18n</code>, <code>live._p(context, string)</code> sends
+                <code>args: [string, context]</code> while the server reads
+                <code>apgettext(context, string)</code>, and <code>live._np</code> sends
+                <code>[singular, plural, num, context]</code> against
+                <code>anpgettext(context, singular, plural, num)</code>. Both come back untranslated
+                or wrong. The non-live, cache-backed <code>_p</code> and <code>_np</code> are correct.
+            """
+        ) }}
+
+        {{ bug(
+            "ngettext raises without EXT_BABEL",
+            """
+                With Babel off, the framework installs a no-op pair into Jinja so <code>_()</code> and
+                <code>ngettext()</code> still exist. The plural fallback interpolates with
+                <code>n</code> while the real implementation interpolates with <code>num</code>, so the
+                conventional <code>'%(num)d items'</code> placeholder renders fine with
+                <code>EXT_BABEL = 1</code> and raises <code>KeyError: 'num'</code> &mdash; a 500 on the
+                page &mdash; with it off. If your templates must work in both configurations, write the
+                count into the string yourself rather than relying on the implicit variable.
+            """
+        ) }}
+
+        {{ bug(
+            "A bearer grant walks past the email gate",
+            """
+                <code>requirement_or_grant</code> and <code>requirement_and_grant</code> try the
+                session chain first and fall back to the token when it raises an
+                <code>HTTPException</code> &mdash; and the new
+                <code>401 EMAIL_NOT_VERIFIED</code> is one. The bearer path then checks only the
+                token's grant list, so a user with an unverified address who presents a valid token
+                gets through a route the session half would have refused. That a grant also bypasses
+                CSRF and 2FA is by design; the email check was meant to be universal. Mint grant tokens
+                only for principals you have already verified.
+            """
+        ) }}
+
+        {{ bug(
+            "The styled error page throws away the response it replaces",
+            """
+                The <code>after_request</code> processor that swaps in <code>errors/&lt;status&gt;.html</code>
+                builds a brand new <code>HTMLResponse</code> for 400, 401, 403, 404, 405, 429, 500,
+                502 and 503 whenever the client accepts HTML. Every header the handler set on the
+                response it replaces is dropped with it &mdash; a <code>Set-Cookie</code>, a
+                <code>WWW-Authenticate</code>, the <code>Retry-After</code> on a 429. Session cookies
+                survive, because the session middleware sits outside this one. Return a
+                <code>JSONResponse</code>, or a status the table does not cover, when the headers
+                matter.
+            """
+        ) }}
+
+        {{ bug(
+            "WF_PROCESSING buffers every response",
+            """
+                The request middleware streams a response straight through when no
+                <code>after_request</code> processor is registered, and buffers the whole body when one
+                is. <code>WF_PROCESSING</code> registers one unconditionally &mdash; the error-page
+                swap &mdash; so every application that renders HTML pays for buffering on every
+                response, even though that processor reads nothing but the status code. Streaming
+                responses are still detected and released unbuffered, so the escape hatch works; there
+                is simply no configuration in which a normal response is not buffered.
+            """
+        ) }}
+
+        {{ bug(
+            "The Vite catch-all serves the workspace, not the build",
+            """
+                With the traversal hole closed, <code>asset_catch</code> resolves under
+                <code>&lt;vite_ns&gt;/&lt;path&gt;</code> and
+                <code>&lt;vite_ns&gt;/public/&lt;path&gt;</code> &mdash; that is, under
+                <code>fluid/frontend/</code>, not under <code>dist/</code>. The framework sets the
+                <code>vite_ns</code> cookie itself when it serves the Vite index, so in production any
+                visitor can fetch any file inside a registered frontend workspace:
+                <code>GET /package.json</code>, <code>GET /src/main.ts</code>. Keep nothing in a
+                frontend workspace you would not publish, and put secrets in the app config, which is
+                now out of reach.
+            """
+        ) }}
+
+        {{ bug(
+            "An event registered from a request handler keeps that request",
+            """
+                <code>create_loop</code> starts the broadcaster's consumer with
+                <code>asyncio.create_task</code>, which copies the context it was called in. Register
+                an event from inside a request and the loop task carries that request's
+                <code>FluidContext</code> for the life of the process, so every handler on that channel
+                afterwards sees a long-dead <code>Request</code> &mdash; and because the wrapper then
+                re-raises rather than logging, a failing handler disappears into the gather without a
+                line in the log. Register events from a startup hook or an Additive's
+                <code>before_enable</code>, which is what every example here does anyway.
+            """
+        ) }}
+
+        {{ bug(
+            "A half-registered event survives its own error",
+            """
+                When registration off-loop after startup raises the new
+                <code>FrameworkException</code>, the broadcaster has already been put in the registry,
+                so <code>events.has_event(name)</code> answers <code>True</code> and
+                <code>trigger()</code> succeeds quietly into a channel nothing will ever drain. Catch
+                that exception and you have an event that looks registered and delivers nothing; let it
+                propagate, which is the right thing to do with it.
+            """
+        ) }}
+
+        {{ bug(
+            "Additive request processors skip the Additive's websockets",
+            """
+                <code>additive.before_request</code> and <code>additive.after_request</code> are
+                installed as HTTP middleware on <code>additive.api</code> and <code>additive.app</code>
+                only. A route on <code>additive.ws</code> is registered without them, so a guard you
+                wrote as a <code>before_request</code> does not protect your Additive's websocket
+                endpoints. Check the connection inside the endpoint.
+            """
+        ) }}
+
+        {{ bug(
+            "Additive after-request processors do not receive a response",
+            """
+                <code>fluid.after_request</code> receives a real <code>Response</code>, because it runs
+                in the ASGI middleware after the app has produced one.
+                <code>additive.after_request</code> runs inside the router's endpoint wrapper, before
+                FastAPI serialises anything, so what it receives is whatever your handler returned
+                &mdash; a dict, a model, a string. Write additive after-request processors against the
+                return value, not against a response object.
+            """
+        ) }}
+
+        {{ bug(
+            "Streaming responses skip after-request processors",
+            """
+                The request middleware buffers the response so <code>after_request</code> can rewrite
+                it, and gives that up the moment the app announces more body to come. A
+                <code>StreamingResponse</code> therefore passes straight through untouched. A buffered
+                one keeps the headers the app produced, so a processor that changes the body has to
+                return a new response rather than mutating the one it was handed.
+            """
+        ) }}
+
+        {{ bug(
+            "RATELIMIT_DEFAULT never applies",
+            """
+                slowapi evaluates application-wide default limits only from its own middleware, and the
+                framework installs the exception handler without that middleware. So a route without a
+                <code>fluid.limit</code> decorator is never checked at all. Installing the middleware
+                would start rate limiting every route of every existing application on upgrade, which
+                is not something a stabilisation release gets to do. Put the limit you want on the
+                route and read <code>RATELIMIT_DEFAULT</code> as intent.
+            """
+        ) }}
+
+        {{ bug(
+            "JWT keys live in the cache",
+            """
+                Key rotation writes the signing keys into whatever <code>CACHE_TYPE</code> points at,
+                and a rotation also runs as a startup hook. With the in-process legacy cache every
+                restart mints a new key and forgets the old ones, so every token issued before it stops
+                decoding. Run the JWT extension against Redis. A real fix is a key store that is not
+                the response cache.
+            """
+        ) }}
+
+        {{ bug(
+            "Migrate template selection",
+            """
+                <code>wf migrate init</code> chooses the single- or multi-database template from
+                <code>SQLALCHEMY_BINDS</code> in your config, at init time. Binds attached at runtime
+                through <code>Model.set_bind</code> &mdash; which is how
+                <code>SECURITY_MODELS_DB_BIND</code>, <code>BABEL_DATABASE_BIND</code> and most
+                Additives do it &mdash; are not detected and need the template picked by hand.
+            """
+        ) }}
+
+        {{ bug(
+            "Event backpressure",
+            """
+                Broadcasts use a bounded per-listener buffer sized by
+                <code>EVENTS_EVENT_QUEUE_SIZE</code>. A consumer that falls behind still loses its
+                oldest events &mdash; it is logged as a warning rather than happening silently, but
+                delivery stays best-effort by design.
+            """
+        ) }}
+
+        {{ bug(
+            "Hooks live in mix(), not in the lifespan",
+            """
+                Startup and shutdown hooks run from <code>fluid.mix()</code> rather than through the
+                ASGI lifespan protocol, so they do not run when an external ASGI server imports and
+                serves your app. Run your apps through <code>wf run</code>.
+            """
+        ) }}
+
+        {{ bug(
+            "Uncached translations still block",
+            """
+                A key you explicitly opted out of the cache is read through a synchronous session on
+                the <code>gettext</code> path. <code>agettext</code> offers a non-blocking alternative,
+                but the callables installed into Jinja stay synchronous on purpose.
+            """
+        ) }}
+
+        {{ bug(
+            "?lang= accepts locales you do not ship",
+            """
+                <code>?lang=</code> and the <code>lang</code> cookie accept any locale Babel can parse,
+                not only the ones in <code>BABEL_SUPPORTED_LOCALES</code> &mdash; only the
+                <code>Accept-Language</code> path is restricted to them. A request naming a locale you
+                do not ship gets the untranslated source strings, and a <code>Domain</code> keeps one
+                loaded catalog per locale it has been asked for, for the life of the process. The set of
+                locales Babel knows is finite, so this is bounded rather than a leak, but a client can
+                still make an application hold a few hundred empty catalogs it will never use.
+            """
+        ) }}
+
+        {{ bug(
+            "Configs written before beta 3 keep their old encoding",
+            """
+                <code>app_configs/&lt;name&gt;.ini</code> is written as UTF-8 and read with a locale
+                fallback now, so old files keep working. But a non-ASCII value written on a non-UTF-8
+                console before this release still cannot be recovered on a machine with a different
+                locale encoding. Rewrite the affected configs once, or keep their values ASCII and move
+                secrets behind the <code>*_FILE</code> indirection.
+            """
+        ) }}
+
+        {{ bug(
+            "HMR relies on a proxied websocket that can die",
+            """
+                Hot reload across the main app and multiple Additive frontends rides on the websocket
+                proxy in front of the shared dev server. That connection can drop on its own &mdash; a
+                Vite restart is the usual trigger &mdash; and when it does, the affected frontend
+                simply stops picking up changes. A browser refresh re-establishes the proxy
+                immediately; there is no need to restart <code>wf run</code> for it.
+            """
+        ) }}
+    </div>
+{% endblock %}
+
+{% block breaks %}
+    <div class="doc-list">
+        {{ break(
+            "Templates autoescape",
+            """
+                This is the one that costs you reading time. <strong>A template of yours that
+                deliberately interpolates an HTML string now shows the tags.</strong> Wrap the value in
+                <code>markupsafe.Markup</code> at the point you build it, or add <code>| safe</code> at
+                the point you render it &mdash; and never do either to something that came from a
+                request. An existing <code>| e</code> keeps working and does not double escape. The
+                escaped suffixes are <code>.html</code>, <code>.htm</code>, <code>.xml</code>,
+                <code>.xhtml</code> and <code>.svg</code>, plus every <code>render_string</code> source;
+                anything else, <code>.txt</code> and <code>.md</code> included, is untouched. If you
+                assemble HTML in Python and hand it to a template, remember that joining
+                <code>Markup</code> pieces with a plain <code>str</code> separator gives a plain
+                <code>str</code> back. Rendering costs about 12&nbsp;% more, measured on an
+                interpolation-dense page; it stays well inside the budget, and it is the whole price of
+                the fix.
+            """
+        ) }}
+
+        {{ break(
+            "MAIL_USE_TLS and MAIL_USE_STARTTLS swapped defaults",
+            """
+                <code>MAIL_USE_TLS</code> now defaults to <code>False</code> and
+                <code>MAIL_USE_STARTTLS</code> to <code>True</code>, matching the
+                <code>MAIL_PORT</code> default of 587. The old pair &mdash; 587 with implicit TLS
+                &mdash; described a server neither client could reach. If yours really does answer with
+                implicit TLS, set <code>MAIL_PORT = 465</code> and <code>MAIL_USE_TLS = True</code>
+                explicitly. Setting both flags now raises at startup instead of being resolved
+                differently by each client.
+            """
+        ) }}
+
+        {{ break(
+            "SocketManager takes the application first",
+            """
+                <code>SocketManager(fluid, events, queries)</code>. It is constructed by the events
+                extension, so this only concerns code that built one by hand.
+                <code>has_subscriptions(event, sid)</code> now means what it says on the
+                <code>unsubscribe</code> path.
+            """
+        ) }}
+
+        {{ break(
+            "Sources.rendered is Markup, and Vite counts namespaces",
+            """
+                <code>Sources.rendered</code> is a <code>Markup</code> rather than a <code>str</code>,
+                and <code>Markup(&quot;&quot;)</code> rather than <code>&quot;&quot;</code> before the freeze &mdash; it has
+                to be, or autoescaping would escape the framework's own script tags.
+                <code>Vite._instances</code>, a counter, is replaced by <code>Vite._namespaces</code>,
+                the set of registered frontend namespaces, and <code>asset_catch</code> takes it as a
+                second argument.
+            """
+        ) }}
+
+        {{ break(
+            "MergedTranslations gained a findtext family",
+            """
+                <code>findtext</code>, <code>nfindtext</code>, <code>pfindtext</code>,
+                <code>npfindtext</code> and their four <code>a</code>-prefixed pendants answer
+                <code>None</code> when neither the database nor the compiled catalog carries the
+                message. The eight <code>gettext</code> methods are unchanged and still answer with the
+                source string on a miss, so this only breaks a subclass that overrode them expecting
+                the escalation to call <code>gettext</code>.
+            """
+        ) }}
+    </div>
+{% endblock %}

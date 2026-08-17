@@ -1,0 +1,93 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+
+{% block title %}Reference: Core — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Reference</span>
+        <h1 class="doc-h1">Core</h1>
+        <p class="doc-lead">
+            The runtime heart: the application class, configuration, the request context, the shared
+            extension registry and the constants the framework reads its switches from.
+        </p>
+
+        <h2>Fluid</h2>
+        <p><code>from webfluid import Fluid</code> &mdash; the application, a subclass of FastAPI.</p>
+        <ul>
+            <li><code>Fluid(import_name)</code> &mdash; constructs the app; parses config, sets up static, jinja, middleware and the optioned batteries.</li>
+            <li><code>render(template, **ctx)</code> &mdash; async render through the context processors and the Jinja environment.</li>
+            <li><code>render_string(source, **ctx)</code> &mdash; the same for a template you hold as a string.</li>
+            <li><code>mix()</code> &mdash; run the app (blocking; owns the event loop, the lifecycle phases and the shutdown signals).</li>
+            <li><code>startup_hook(fn)</code> / <code>shutdown_hook(fn)</code> &mdash; register lifecycle callbacks (no required args).</li>
+            <li><code>before_request(fn)</code> / <code>after_request(fn)</code> / <code>context_processor(fn)</code> &mdash; request-level hooks.</li>
+            <li><code>add_theme(name, link)</code> / <code>get_theme()</code> / <code>set_theme(request, name)</code> &mdash; theme management (needs <code>WF_THEMES</code>).</li>
+            <li><code>add_source(src, priority=1)</code> &mdash; queue an HTML head source (a script or link) to inject into rendered pages; <code>sources</code> and <code>rendered_sources</code> read them back once frozen. <code>rendered_sources</code> is a <code>Markup</code>, so it survives autoescaping.</li>
+            <li><code>add_template_loader(loader)</code> &mdash; contribute a Jinja loader before startup.</li>
+            <li><code>url_path_for(name, **params)</code> &mdash; reverse a route through a name index.</li>
+            <li><code>limit</code> &mdash; the slowapi limiter decorator (or a no-op when rate limiting is off).</li>
+            <li><code>config</code>, <code>jinja_env</code> (autoescaping html/htm/xml/xhtml/svg and every <code>render_string</code> source), <code>name</code>, <code>project_root</code>, <code>additive_root</code>, <code>static_files</code>, <code>static_prefixes</code>, <code>frontend</code> &mdash; runtime attributes.</li>
+        </ul>
+
+        <h2>webfluid.core.config</h2>
+        <ul>
+            <li><code>register_config(priority=1)</code> &mdash; class decorator registering a config; priority 1&ndash;10, higher overrides lower.</li>
+            <li><code>Config</code> &mdash; the resolved config dict; <code>from_object</code> pulls in upper-cased attributes.</li>
+            <li><code>DefaultConfig</code> &mdash; the single source of truth for every framework default. Registered classes are merged on top of it, so every key it declares is present in <code>fluid.config</code>.</li>
+            <li><code>init_configs(fluid)</code> / <code>build_config()</code> &mdash; auto-import config modules and merge the registered classes into a plain dict (used internally, and by Migrate).</li>
+        </ul>
+
+        <h2>webfluid.core.identity</h2>
+        <p>The seam a fork edits to make the framework its own. Everything else derives from it.</p>
+        <ul>
+            <li><code>FRAMEWORK_ID</code>, <code>FRAMEWORK_NAME</code>, <code>FRAMEWORK_ABBR</code>, <code>FRAMEWORK_PACKAGE</code>, <code>FRAMEWORK_ROOT</code> &mdash; identity and location.</li>
+            <li><code>FRAMEWORK_SITE</code>, <code>FRAMEWORK_DOCS</code> &mdash; the urls the scaffolder links to.</li>
+            <li><code>HUB_NAME</code>, <code>HUB_API_URL</code>, <code>HUB_AUTH_URL</code>, <code>HUB_TOKEN_FILE</code> &mdash; the package hub.</li>
+            <li><code>CLI_NAME</code>, <code>ENV_PREFIX</code>, <code>EXTENSION_GROUP</code>, <code>MAIN_LOGGER</code>, <code>ADDITIVE_LOGGER</code>, <code>REQUIRES_KEY</code>, <code>IDENTITY_ROUTE</code> &mdash; the names the runtime derives from the above.</li>
+            <li><code>BASE_TEMPLATE</code>, <code>STATIC_MOUNT</code>, <code>STATIC_GLOBAL</code>, <code>TAILWIND_GLOBAL</code> &mdash; the template and asset names.</li>
+        </ul>
+
+        <h2>webfluid.core.context</h2>
+        <ul>
+            <li><code>FluidContext</code> &mdash; the per-request context, exposing <code>.fluid</code>, <code>.request</code> and dict-like storage. <code>current()</code> returns it or raises; <code>try_current()</code> returns <code>None</code> instead; <code>cached_or(key, factory)</code> memoises a value for the request (and just calls the factory when there is no context). A context is always truthy even when it carries no data, so test the result of <code>try_current()</code> against <code>None</code> rather than relying on truthiness &mdash; <code>len()</code> still reports the size of its storage.</li>
+            <li><code>BaseContext</code> &mdash; the contextvar-backed base used by the executor, babel domain, mail client and log contexts. <code>current()</code> / <code>try_current()</code> as above, and <code>outer(depth=1)</code> is a context manager that steps back into an enclosing one &mdash; all inherited by every subclass.</li>
+        </ul>
+
+        <h2>webfluid.core.ext</h2>
+        <p>The shared, ready-to-use battery instances. Import the one you need:</p>
+
+        {{ code(
+            "example", "python",
+            '''from webfluid.core.ext import (
+    scheduler,  # APScheduler AsyncIOScheduler
+    db,         # SQLAlchemy
+    babel,      # Babel
+    security,   # Security
+    events,     # EventManager
+    cache,      # Cache
+    mail,       # Mail
+    jwt         # JWTManager
+)'''
+        ) }}
+
+        <h2>webfluid.core.constants</h2>
+        <p>The runtime flags and paths, resolved once from the environment at import time.</p>
+        <ul>
+            <li><code>APP_STATIC</code>, <code>FRAMEWORK_STATIC</code> &mdash; the static mount prefixes.</li>
+            <li><code>HUB_API</code>, <code>HUB_AUTH</code> &mdash; the Ocean base urls, overridable with the <code>OCEAN_API</code> and <code>OCEAN_AUTH</code> environment variables.</li>
+            <li><code>DEBUG</code>, <code>EXECUTION</code> &mdash; whether debug mode / a live run is active.</li>
+            <li><code>THEMES</code>, <code>TAILWIND</code>, <code>CHECK_FRONTEND</code>, <code>BUILD_FRONTEND</code>, <code>PROCESSING</code>, <code>ADDITIVES</code> &mdash; resolved feature switches; <code>FEATURE_FLAGS</code> is the tuple of their environment names.</li>
+            <li><code>EXT_SCHEDULING</code>, <code>EXT_SQLALCHEMY</code>, <code>EXT_BABEL</code>, <code>EXT_SECURITY</code>, <code>EXT_EVENTS</code>, <code>EXT_CACHE</code>, <code>EXT_MAIL</code>, <code>EXT_JWT</code> &mdash; resolved extension switches, with <code>EXTENSION_FLAGS</code> alongside them.</li>
+            <li><code>DEV_AUTO_INSTALL</code> &mdash; run <code>Additive.install()</code> on every registration during a debug run.</li>
+        </ul>
+
+        <h2>webfluid.version</h2>
+        <ul>
+            <li><code>version()</code> &mdash; returns the running version as a <code>Version</code>.</li>
+            <li><code>Version</code> (in <code>webfluid.utils</code>) &mdash; a <code>packaging.version.Version</code> subclass built from <code>Version(*parts)</code>, with <code>stage</code> and <code>build</code> properties on top of the usual comparison behaviour.</li>
+        </ul>
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/ref/extensions">Extensions</a>.</p>
+    </article>
+{% endblock %}

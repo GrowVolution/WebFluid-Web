@@ -1,0 +1,129 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import info, warning %}
+
+{% block title %}Lifecycle — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Framework utility</span>
+        <h1 class="doc-h1">Lifecycle</h1>
+        <p class="doc-lead">
+            We've been name-dropping "lifecycle hooks" since the very first extension. Time to make good
+            on it. Every WebFluid app has a managed lifecycle: it boots, serves, and shuts down again,
+            all kicked off by the single <code>fluid.mix()</code> call you've used since Getting Started.
+        </p>
+
+        <h2>What mix() really does</h2>
+        <p>
+            <code>mix()</code> is just a thin wrapper that runs the async <code>start()</code> coroutine.
+            From there the framework opens a logging session, runs your <strong>startup hooks</strong>,
+            spins up the server, and then sits on a shutdown flag. When a stop signal arrives it serves
+            its last request, runs your <strong>shutdown hooks</strong> and exits cleanly. You never
+            manage that loop yourself &mdash; you only register the things that should happen at each
+            end.
+        </p>
+
+        <h2>Startup and shutdown hooks</h2>
+        <p>
+            A hook is a plain (sync or async) callable that takes no required arguments. You register it
+            with <code>startup_hook</code> or <code>shutdown_hook</code>. This is the proper home for the
+            table creation we hard-coded under <code>if __name__ == "__main__"</code> back in the
+            SQLAlchemy chapter:
+        </p>
+
+        {{ code(
+            "main.py", "python",
+            '''from webfluid import Fluid
+from webfluid.core.ext import db
+
+
+def prepare_fluid() -> Fluid:
+    app = Fluid(__name__)
+
+    from fluid.app import app_router
+    from fluid.api import api_router
+    app.include_router(app_router)
+    app.include_router(api_router)
+
+    from fluid.events.models import register as register_events
+    app.startup_hook(register_events)
+
+    @app.startup_hook
+    async def create_tables():
+        bind = db.get_bind_for_model(db.Model)
+        db.Model.metadata.create_all(bind.sync_engine)
+
+    @app.shutdown_hook
+    def goodbye():
+        from webfluid.utils.logging import factory as log
+        log.log("The app is cooling down.")
+
+    return app
+
+
+if __name__ == "__main__":
+    prepare_fluid().mix()'''
+        ) }}
+
+        <p>
+            The <code>register_events</code> line is the one we already wrote back in the
+            <a href="/v/{{ version }}/ext/events">Events</a> chapter, and now you can see why it had to be
+            a hook: a startup hook is simply "code that runs once the loop exists and before the first
+            request arrives", which is exactly what a broadcast channel needs.
+        </p>
+
+        <p>
+            Extensions and Additives use exactly this mechanism under the hood &mdash; the scheduler
+            starts on a startup hook, the proxy client closes on a shutdown hook, database pools are
+            disposed on one, and even the Additive registration itself is a startup hook. So when you
+            register your own, you're joining the same queue the framework uses &mdash; which is also why
+            <code>wf run</code> shows you a progress bar for each phase: it is counting the same hooks you
+            just added to.
+            <br><br>
+            The shutdown half is worth taking as seriously as the startup half, because it is the only
+            place a process gets to tidy up after itself. Every database engine the app opened is
+            disposed there, which is exactly the kind of work that is invisible while it happens and
+            expensive when it does not.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            Startup hooks run one after another in the order you register them, and shutdown hooks in
+            reverse registration order. Later hooks can rely on earlier ones having finished &mdash; but a
+            hook that blocks also holds up every hook queued after it, so keep them focused and let long
+            running work happen elsewhere.
+        """) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            Hooks can only be added before the server is up. Trying to register one after startup raises,
+            which is the framework's way of catching a mistake early. The practical rule: register hooks
+            while building your app (in the factory), not from inside a request.
+        """) }}
+
+        <h2>Graceful shutdown</h2>
+        <p>
+            The runtime installs handlers for <code>SIGINT</code> and <code>SIGTERM</code>, so a
+            <code>Ctrl+C</code> or a container stop flips the shutdown flag instead of killing the
+            process mid-request. The in-flight request finishes, your shutdown hooks run, and only then
+            does the server stop &mdash; which is why you'll always see the "Running shutdown hooks..."
+            line before the app exits.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            This whole sequence lives in <code>mix()</code>, not in the ASGI lifespan protocol. So an
+            external ASGI server that imports your app and serves it directly &mdash; a bare
+            <code>uvicorn main:fluid</code>, or gunicorn &mdash; never runs your startup or shutdown
+            hooks: no tables, no scheduler, no Additives. Run your apps through <code>wf run</code>, which
+            is what the whole CLI is built around.
+        """) }}
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/utils/runtime">Runtime</a>.</p>
+    </article>
+{% endblock %}

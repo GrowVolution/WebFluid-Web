@@ -1,0 +1,53 @@
+{% extends "docs/base.html" %}
+
+{% block title %}Reference: Surface — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Reference</span>
+        <h1 class="doc-h1">Surface</h1>
+        <p class="doc-lead">
+            <code>webfluid.surface</code> &mdash; the frontend layer: serving the UI, plus the bundled
+            Node and Tailwind tooling that drives it. Most of this you reach through config and the CLI
+            rather than directly.
+        </p>
+
+        <h2>Frontend</h2>
+        <p><code>from webfluid.surface import Frontend</code> &mdash; the object that covers an app or Additive with a frontend.</p>
+        <ul>
+            <li><code>cover_fluid(fluid)</code> / <code>cover_additive(additive)</code> &mdash; attach a frontend to the main app or an Additive (driven by <code>APP_FRONTEND</code> / the Additive manifest's <code>frontend</code>). Covering twice raises.</li>
+            <li><code>include()</code> &mdash; the markup injected by the template <code>frontend()</code> helper (htmx / Alpine / Tailwind link).</li>
+            <li><code>vite()</code> &mdash; the served Vite index, rewritten for HMR in debug. Serving it sets the <code>vite_ns</code> cookie that the asset catch-all resolves relative requests against; only registered namespaces are accepted and the resolved file must stay under the project root.</li>
+            <li><code>register_index</code> (frontend config, default <strong>true</strong>) &mdash; for the <code>vite</code> type, auto-registers the <code>/</code> route; set it false to own <code>/</code> yourself.</li>
+            <li><code>generate_tailwind(frontend, static)</code> &mdash; compile this surface's raw stylesheet, for the Vite source tree and / or the static folder.</li>
+            <li><code>Frontend.prepare(fluid)</code> &mdash; wires the dev-server proxy (debug) or the check / build / mount flow (production, gated by <code>WF_CHECK_FRONTEND</code> and <code>WF_BUILD_FRONTEND</code>).</li>
+        </ul>
+
+        <h2>Configuration helpers</h2>
+        <p>In <code>webfluid.utils.surface</code>:</p>
+        <ul>
+            <li><code>setup_frontend(project)</code> &mdash; downloads htmx/Alpine, the create-vite templates, Node and Tailwind, and writes the root <code>package.json</code> and orchestrating <code>vite.config.js</code>.</li>
+            <li><code>validate_config(dict)</code> &mdash; validates an <code>APP_FRONTEND</code> / manifest frontend block (types: <code>none</code>, <code>htmx</code>, <code>vite</code>) and returns a <code>(ok, value-or-reason)</code> pair.</li>
+            <li><code>dist</code> (in <code>webfluid.surface</code>) &mdash; the tooling directory where Node, Tailwind and the Vite templates are cached.</li>
+        </ul>
+
+        <h2>Node tooling</h2>
+        <ul>
+            <li><code>load_node(download_fn)</code> &mdash; ensures a Node runtime (system or downloaded standalone).</li>
+            <li><code>node_cmd(cmd, cwd)</code> &mdash; run a Node/npm command (raises <code>NodeError</code> on failure).</li>
+            <li><code>node_proc(cmd, cwd)</code> &mdash; spawn a long-lived Node process.</li>
+            <li>CLI: <code>wf node ...</code>.</li>
+        </ul>
+
+        <h2>Tailwind tooling</h2>
+        <ul>
+            <li><code>load_tailwind(download_fn)</code> &mdash; ensures the standalone Tailwind CLI.</li>
+            <li><code>generate_tailwind_css(fluid)</code> &mdash; compile every <code>tailwind_raw.css</code> in the app (and framework) on startup.</li>
+            <li><code>generate_tailwind_asset(in, out, cwd)</code> / <code>tailwind_cmd(args, cwd)</code> &mdash; lower-level compile / passthrough.</li>
+            <li>CLI: <code>wf tailwind -- ...</code>.</li>
+        </ul>
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/ref/additives">Additives</a>.</p>
+    </article>
+{% endblock %}

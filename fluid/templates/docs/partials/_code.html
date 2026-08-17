@@ -4,6 +4,6 @@
             <span class="doc-code-bar-label">{{ label }}</span>
             <span class="doc-code-bar-lang">{{ lang }}</span>
         </div>
-        <pre><code class="language-{{ lang }}">{{ content }}</code></pre>
+        <pre><code class="language-{{ lang }}">{{ content|safe }}</code></pre>
     </div>
 {% endmacro %}

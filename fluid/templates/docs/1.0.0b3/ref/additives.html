@@ -1,0 +1,54 @@
+{% extends "docs/base.html" %}
+
+{% block title %}Reference: Additives — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Reference</span>
+        <h1 class="doc-h1">Additives</h1>
+        <p class="doc-lead">
+            The module system: the <code>Additive</code> class, its router, the manifest and the registry
+            helpers that discover and load Additives at startup.
+        </p>
+
+        <h2>Additive</h2>
+        <p><code>from webfluid import Additive</code> &mdash; a self-contained sub-app. Must live inside the <code>additives</code> package and expose itself as <code>additive</code>.</p>
+        <ul>
+            <li><code>Additive(import_name, base=None, required_extensions=None)</code> &mdash; constructs it from its manifest; pass a base to extend it. A base contributes its own required extensions to the child.</li>
+            <li><code>api</code>, <code>app</code>, <code>ws</code> &mdash; the JSON / HTML / WebSocket routers, mounted under the Additive's prefix.</li>
+            <li><code>render(template, **ctx)</code> &mdash; render within the Additive's template namespace.</li>
+            <li><code>before_enable(fn)</code> / <code>after_enable(fn)</code> &mdash; enable-time hooks (the place to register routes).</li>
+            <li><code>before_request(fn)</code> / <code>after_request(fn)</code> / <code>context_processor(fn)</code> &mdash; scoped request hooks. They are installed as middleware on <code>api</code> and <code>app</code> only, so they do not run for <code>ws</code> routes.</li>
+            <li><code>enable(fluid)</code>, <code>install()</code>, <code>configure(config)</code> &mdash; lifecycle, dependency resolution plus file/package extraction, and interactive app-config contribution.</li>
+            <li><code>unique_name(name)</code>, <code>version</code>, <code>id</code>, <code>prefix</code>, <code>is_base</code>, <code>manifest</code>, <code>root_path</code> &mdash; identity and metadata. <code>version</code> is a plain attribute holding a <code>Version</code>.</li>
+        </ul>
+
+        <h2>Router</h2>
+        <ul>
+            <li>An APIRouter variant used by the three Additive routers. It wraps every endpoint so its logs are attributed to the Additive.</li>
+            <li><code>http_middleware(fn)</code> &mdash; wrap every route of the router with request middleware. The chain is built once, not per request.</li>
+        </ul>
+
+        <h2>Manifest</h2>
+        <p><code>from webfluid import Manifest</code> &mdash; the parsed <code>manifest.json</code>.</p>
+        <ul>
+            <li>Required fields: <code>id</code>, <code>version</code>, <code>type</code> (<code>base</code> / <code>default</code>), <code>frontend</code>. Optional: <code>name</code>, <code>description</code>, <code>authors</code>, <code>requires</code>.</li>
+            <li>Versions accept 1 to 3 numbers (each 0&ndash;999) and an optional pre-release stage <code>a</code> / <code>b</code> / <code>rc</code> with a build of 1&ndash;9 &mdash; so <code>1.2.0a1</code> is valid, epochs and dev / post / local segments are not.</li>
+            <li><code>requires</code> holds <code>wf</code> (a framework version specifier), <code>additives</code> (a mapping of id to specifier, or a list of <code>id@specifier</code> strings) and <code>packages</code> (pip requirements).</li>
+            <li><code>check_requirements(additive_root)</code> &mdash; validates the framework version and the required Additives, and may be called repeatedly.</li>
+            <li>Dict-like access: <code>manifest["id"]</code>, <code>get</code>, <code>keys</code>, <code>items</code>, ...</li>
+        </ul>
+
+        <h2>webfluid.utils.additives</h2>
+        <ul>
+            <li><code>register_additives(fluid)</code> &mdash; the startup hook that discovers, enables and wires every switched-on Additive.</li>
+            <li><code>installed_additives(package)</code> / <code>installed_bases(package)</code> &mdash; list discovered default / base Additives as <code>(id, version, dirname)</code>; results are cached unless you pass <code>cache=False</code>.</li>
+            <li><code>import_base(base_id)</code> &mdash; resolve an installed base Additive by id (used when extending).</li>
+            <li><code>require_extensions(*names)</code> &mdash; the decorator that guards an Additive on its required extensions.</li>
+            <li><code>id_check</code>, <code>version_check</code>, <code>type_check</code> &mdash; the manifest field validators.</li>
+        </ul>
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/ref/utils">Utils</a>.</p>
+    </article>
+{% endblock %}

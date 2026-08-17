@@ -1,0 +1,92 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+
+{% block title %}Reference: Utils — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Reference</span>
+        <h1 class="doc-h1">Utils</h1>
+        <p class="doc-lead">
+            <code>webfluid.utils</code> &mdash; the grab bag the framework leans on internally and exposes
+            for your own use: small helpers, the log factory and the exception hierarchy.
+        </p>
+
+        <h2>webfluid.utils (framework helpers)</h2>
+        <ul>
+            <li><code>enabled(key)</code> &mdash; read a truthy environment switch.</li>
+            <li><code>safe_string(text)</code> / <code>camel_to_snake(text)</code> / <code>random_code(length)</code> &mdash; string helpers.</li>
+            <li><code>async_result(value)</code> &mdash; await it if awaitable, otherwise return as-is.</li>
+            <li><code>safe_execute(fn, reraise, *args)</code> &mdash; call sync/async, optionally swallowing and logging exceptions.</li>
+            <li><code>run_in_executor(fn, *args, executor=None)</code> &mdash; run a blocking call off the event loop, optionally on a pool of your own.</li>
+            <li><code>required_arg_count(fn)</code> &mdash; the introspection behind the hook arity checks.</li>
+            <li><code>get_root_path(import_name)</code>, <code>try_import(name)</code> &mdash; import-location helpers. <code>try_import</code> returns <code>None</code> for a missing module but still raises when the module exists and its own imports fail.</li>
+            <li><code>parse_config(key, value)</code> &mdash; the <code>*_FILE</code> resolution shared by <code>wf run</code> and the migration environment; <code>read_config(path)</code> &mdash; the parser both use, UTF-8 with a locale fallback and an empty parser for a missing file.</li>
+            <li><code>Version</code>, <code>check_required_version(requirement, version_type="framework", additive_version=None)</code>, <code>check_priority(priority)</code>, <code>build_sorted_tuple(data)</code> &mdash; version and config plumbing.</li>
+            <li><code>add_proxy(target, base_url, ...)</code>, <code>get_proxy(...)</code>, <code>get_websocket_proxy(...)</code>, <code>close_proxy_client()</code> &mdash; the reverse-proxy utilities behind HMR. The HTTP one drops the upstream's hop-by-hop and encoding headers and recomputes the length for the body it forwards, while repeated headers such as <code>Set-Cookie</code> survive as separate lines. The websocket one awaits its cancelled pump tasks, so a dropped upstream is not an unretrieved task exception.</li>
+        </ul>
+
+        <h2>webfluid.utils.logging</h2>
+        <p>The shared log factory:</p>
+
+        {{ code(
+            "example", "python",
+            '''from webfluid.utils.logging import factory as log
+
+log.log("info line")
+log.debug("...")
+log.warning("...")
+log.error("...")
+log.exception(exc, "optional message")'''
+        ) }}
+
+        <ul>
+            <li><code>factory</code> &mdash; the singleton <code>LogFactory</code>. Logs only while a run is in execution, coloured to stdout and plain to stderr.</li>
+            <li><code>additive_context(fn)</code> &mdash; routes a callable's logs through the Additive logger.</li>
+            <li><code>start_session()</code> &mdash; sets up handlers and log level (called by the runtime).</li>
+        </ul>
+
+        <h2>webfluid.utils.cli</h2>
+        <ul>
+            <li><code>progress_bar(description, length, **kwargs)</code> &mdash; a tqdm bar sized to the terminal. While one is open, log lines are written through it instead of over it.</li>
+            <li><code>download_file(url, dest)</code> &mdash; a streamed download with a bar attached.</li>
+        </ul>
+
+        <h2>webfluid.utils.additives</h2>
+        <ul>
+            <li><code>id_check</code>, <code>version_check</code>, <code>type_check</code> &mdash; the manifest field validators.</li>
+            <li><code>require_extensions(*names)</code> &mdash; decorator that asserts the named extensions are enabled.</li>
+            <li><code>register_additives</code>, <code>installed_additives</code>, <code>installed_bases</code>, <code>import_base</code> &mdash; the discovery and registry helpers (see the <a href="/v/{{ version }}/ref/additives">Additives</a> reference).</li>
+        </ul>
+
+        <h2>webfluid.utils.countries</h2>
+        <ul>
+            <li><code>Country</code> &mdash; an ISO 3166-1 alpha-2 <code>StrEnum</code>; <code>DEFAULT_COUNTRY</code> is the fallback code.</li>
+            <li><code>is_valid(code)</code>, <code>coerce(code)</code>, <code>normalize(code)</code> &mdash; validate and canonicalise a code.</li>
+            <li><code>localized_names(locale=None)</code> / <code>options(locale=None)</code> &mdash; Babel-localized country names / select options.</li>
+            <li><code>country_from_request(request=None, fallback=DEFAULT_COUNTRY)</code> &mdash; resolve the visitor's country from geo headers.</li>
+        </ul>
+
+        <h2>webfluid.utils.ocean</h2>
+        <ul>
+            <li><code>Ocean</code> &mdash; the HTTP client behind <code>wf ocean</code> (search, resolve, download, publish, ...).</li>
+            <li><code>load_token</code> / <code>save_token</code> / <code>delete_token</code> / <code>token_file</code> &mdash; the token stored at <code>~/.wf-ocean</code>.</li>
+            <li><code>extract_archive(data, target)</code>, <code>humanize_error(detail)</code> &mdash; archive extraction and human-readable error-code messages.</li>
+        </ul>
+
+        <h2>webfluid.exceptions</h2>
+        <ul>
+            <li><code>FrameworkException</code> &mdash; the root of all framework errors.</li>
+            <li><code>FrontendException</code> &rarr; <code>NodeError</code>, <code>TailwindError</code>.</li>
+            <li><code>AdditiveException</code> &rarr; <code>ManifestError</code>.</li>
+            <li><code>OceanError</code> &mdash; raised by the Ocean client; carries <code>status</code> and <code>detail</code>.</li>
+        </ul>
+
+        <h2>That's a wrap</h2>
+        <p>
+            You've gone from a single <code>main.py</code> to the full surface of WebFluid. Keep the
+            <a href="/v/{{ version }}/">overview</a> handy for the known issues this beta ships with, pin
+            your version, and go build something liquid.
+        </p>
+    </article>
+{% endblock %}

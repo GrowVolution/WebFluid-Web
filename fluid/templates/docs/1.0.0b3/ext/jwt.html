@@ -1,0 +1,209 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import info, warning %}
+
+{% block title %}JWTManager — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Extensions</span>
+        <h1 class="doc-h1">JWTManager</h1>
+        <p class="doc-lead">
+            The last battery in the box is the JWTManager. It signs and verifies JSON Web Tokens, but
+            with a small luxury on top: it rotates its signing secret on a schedule and keeps the
+            recent secrets in the cache, so old tokens stay valid until they age out on their own.
+        </p>
+
+        <h2>Enabling JWT</h2>
+        <p>
+            This is the first battery that builds on two others: it needs both
+            <code>EXT_SCHEDULING</code> (to run the rotation) and <code>EXT_CACHE</code> (to store the
+            secrets). The manager will refuse to start otherwise:
+        </p>
+
+        {{ code(
+            "app_configs/app.ini", "ini",
+            """[general]
+SECRET_KEY = supersecret
+
+[data]
+REDIS_URI = redis://localhost:6379
+
+[extensions]
+EXT_SCHEDULING = 1
+EXT_CACHE = 1
+EXT_JWT = 1"""
+        ) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            On startup the manager mints its first secret and registers a job that rotates it every
+            JWT_ROTARY_INTERVAL days. Each secret lives in the cache under its own key id, so a token
+            signed with an older secret still verifies until that secret expires.
+        """) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            Read that literally: the secrets live <em>in the cache</em>, and the first one is minted by a
+            startup hook. Point CACHE_TYPE at the in-process legacy backend and every restart mints a new
+            secret and forgets the old ones, so every token you issued before it stops verifying. Run the
+            JWT manager against Redis, which is why the config above enables it.
+        """) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        <p>
+            One consequence of that design deserves a sentence of its own, because it is the reason the
+            key id is checked before it is used. A token's header is the one part of it nobody has
+            verified yet &mdash; anyone can write anything there &mdash; and the framework reads the
+            <code>kid</code> out of it to decide which cache entry holds the signing secret. So the
+            <code>kid</code> has to look exactly like something a rotation produced: 32 lowercase hex
+            characters, nothing else. A header naming <code>current</code>, or reaching for the
+            revocation namespace, is rejected before any lookup happens.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            The same care applies to your own cache keys. The <code>jwt:</code> prefix belongs to the
+            manager &mdash; never write under it, and never call <code>cache.clear()</code> in an app that
+            uses JWT, because that is a <code>flushdb</code> and it takes the signing keys with it.
+        """) }}
+
+        <h2>Encoding and decoding</h2>
+        <p>
+            The API is four methods: a sync and async pair for each direction. You hand
+            <code>encode</code> a payload and get a signed token back; <code>decode</code> verifies it
+            and returns the claims. The manager fills in the standard <code>exp</code>,
+            <code>iat</code>, <code>nbf</code>, <code>iss</code> and <code>aud</code> claims for you:
+        </p>
+
+        {{ code(
+            "fluid/services/auth.py", "python",
+            '''from webfluid.core.ext import jwt
+
+
+async def issue_token(user_id: int) -> str:
+    return await jwt.aencode({"sub": str(user_id)})
+
+
+async def read_token(token: str) -> dict:
+    # Raises if the token is invalid, expired or not yet valid.
+    return await jwt.adecode(token)'''
+        ) }}
+
+        <p>
+            Plugged into routes, this becomes a bearer-token flow for API clients &mdash; separate from
+            the session login we built in <a href="/v/{{ version }}/ext/security">Security</a>. It gets its
+            own module in <code>fluid/api</code>, minting a token and reading it back on a protected
+            endpoint:
+        </p>
+
+        {{ code(
+            "fluid/api/tokens.py", "python",
+            '''from fastapi import Request
+from fastapi.exceptions import HTTPException
+
+from fluid.services.auth import issue_token, read_token
+
+
+async def token(request: Request):
+    data = await request.json()
+    # ... verify credentials here ...
+    signed = await issue_token(user_id=1)
+    return {"token": signed}
+
+
+async def whoami(request: Request):
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing token")
+
+    try:
+        claims = await read_token(auth.removeprefix("Bearer "))
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    return {"user_id": claims["sub"]}'''
+        ) }}
+
+        <p>
+            That is the manual version, and it is worth writing once to see the shape. In practice you
+            rarely need it: if the security battery is enabled too, put a <code>permissions</code> list
+            into the payload and its <code>requirement_or_grant</code> guard from the
+            <a href="/v/{{ version }}/ext/security">Security</a> chapter does the header parsing, the
+            decoding and the user lookup for you &mdash; on the same route that also serves a browser
+            session.
+        </p>
+
+        <h2>Short-lived and revoked tokens</h2>
+        <p>
+            Two knobs turn that into something you can actually operate. <code>encode</code> takes an
+            <code>expire</code> in days, overriding <code>JWT_EXPIRY_DAYS</code> for a single token &mdash;
+            a thirty day session token and a ten minute one-off can come out of the same manager. And if
+            you put a <code>jti</code> claim into your payload, <code>decode</code> checks the cache for a
+            revocation entry under that id before it hands the claims back:
+        </p>
+
+        {{ code(
+            "fluid/services/auth.py", "python",
+            '''from webfluid.core.ext import cache, jwt
+from uuid import uuid4
+
+
+async def issue_short_lived(user_id: int) -> tuple[str, str]:
+    jti = uuid4().hex
+    token = await jwt.aencode({"sub": str(user_id), "jti": jti}, expire=1)
+    return token, jti
+
+
+async def revoke(jti: str):
+    # Any key is fine; decode only checks whether it exists.
+    await cache.aset(f"jwt:revoked:{jti}", "1", timeout=60 * 60 * 24)'''
+        ) }}
+
+        <p>
+            Revocation is opt-in on purpose: a token without a <code>jti</code> costs no cache lookup at
+            all, which is the whole point of a stateless token. Add one where you need a kill switch, and
+            leave it off everywhere else.
+        </p>
+
+        <h2>Audiences and tuning</h2>
+        <p>
+            Both <code>encode</code> and <code>decode</code> take an <code>audience</code> argument
+            (default <code>"default"</code>). Audiences let one app mint tokens for different
+            consumers &mdash; an internal API versus a public one, say &mdash; and you map the short
+            names to their full audience strings in the config:
+        </p>
+
+        {{ code(
+            "fluid/config.py", "python",
+            '''from webfluid.core.config import register_config
+
+
+@register_config(10)
+class MyConfig:
+    SESSION_COOKIE_SECURE = True
+
+    JWT_ROTARY_INTERVAL = 15            # days between secret rotations
+    JWT_SECRET_LENGTH = 128             # bytes of randomness per secret
+    JWT_EXPIRY_DAYS = 30                # token lifetime
+    JWT_ALGORITHM = "HS256"
+    JWT_ISSUER = "MyApp"
+    JWT_AUDIENCES = {
+        "default": "Application",
+        "api": "PublicAPI"
+    }'''
+        ) }}
+
+        <p>
+            That rounds out the battery set. With the database, migrations, mail, i18n, events, cache
+            and tokens all in place, our app has grown into something real. Time to give it a face.
+        </p>
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/surface/tooling">the Frontend introduction</a>.</p>
+    </article>
+{% endblock %}

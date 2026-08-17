@@ -1,0 +1,115 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import info, warning %}
+
+{% block title %}Cache — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Extensions</span>
+        <h1 class="doc-h1">Cache</h1>
+        <p class="doc-lead">
+            Our event query happily counts models on every call. That is fine until the table grows
+            or the query gets expensive. The Cache battery gives you one small key-value API that
+            swaps its backend behind the scenes, so you can keep hot values around without committing
+            to a specific store.
+        </p>
+
+        <h2>Two backends, one API</h2>
+        <p>
+            The extension ships two implementations. <strong>Redis</strong> is the production backend
+            and the default. <strong>Legacy</strong> is a simple in-process dictionary that expires its
+            own entries through an expiry heap &mdash; great for development and single-process setups,
+            and it needs nothing but itself. You pick one with <code>CACHE_TYPE</code>:
+        </p>
+
+        {{ code(
+            "app_configs/app.ini", "ini",
+            """[general]
+SECRET_KEY = supersecret
+
+[data]
+REDIS_URI = redis://localhost:6379
+
+[extensions]
+EXT_CACHE = 1
+
+[cache]
+CACHE_TYPE = legacy"""
+        ) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            If you do not set CACHE_TYPE at all, the framework default resolves to redis and connects
+            to REDIS_URI database 2. The legacy backend shown above keeps everything in one process, so
+            it is the wrong choice the moment you run more than one worker &mdash; two processes, two
+            caches, two answers.
+        """) }}
+
+        <h3>The config values</h3>
+        <ul>
+            <li><code>CACHE_TYPE</code> &mdash; <strong>legacy</strong> or <strong>redis</strong>.</li>
+            <li><code>CACHE_DEFAULT_TIMEOUT</code> &mdash; TTL in seconds when you don't pass one. Default <strong>300</strong>.</li>
+            <li><code>CACHE_REDIS_URI</code> &mdash; the redis url for the redis backend.</li>
+        </ul>
+
+        <h2>Using the cache</h2>
+        <p>
+            Like every battery, the instance lives in the shared registry, and every method has an
+            async twin. Let's make our model count from the previous chapter cheap to ask for:
+        </p>
+
+        {{ code(
+            "fluid/events/models.py", "python",
+            '''from webfluid.core.ext import db, cache, events
+from sqlalchemy import select, func
+
+from fluid.models import MyModel
+
+
+def register():
+    events.create_signal("model:created", internal=False)
+
+    @events.query("model:count")
+    async def count_models(_):
+        cached = await cache.aget("model:count")
+        if cached is not None:
+            return int(cached)
+
+        async with db.async_executor(model=MyModel) as e:
+            result = await e.exec(select(func.count(MyModel.id)), scalars=False)
+            total = result.scalar()
+
+        # Keep it warm for a minute.
+        await cache.aset("model:count", total, timeout=60)
+        return total
+
+    # Whenever a model is created, drop the stale count:
+    @events.event("model:created", internal=False)
+    async def bust_count(_):
+        await cache.adelete("model:count")'''
+        ) }}
+
+        <p>
+            The synchronous side mirrors this one to one with <code>cache.set</code>,
+            <code>cache.get</code> and <code>cache.delete</code>, plus <code>clear</code> /
+            <code>aclear</code> to wipe everything. Values are stored as-is by the legacy backend and
+            as strings by redis, so decode on the way out when you need a specific type.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            Two edges worth knowing before you reach for either. <code>clear()</code> is a
+            <code>flushdb</code>: it does not clear <em>your</em> keys, it clears the database &mdash; and
+            in an app that uses JWT that includes the signing keys, which invalidates every token in
+            circulation. And a <code>timeout</code> of <code>0</code> is not &ldquo;no expiry&rdquo;; it is falsy, so
+            it silently becomes <code>CACHE_DEFAULT_TIMEOUT</code>. There is no way to write an entry
+            that never expires.
+        """) }}
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/ext/jwt">JWTManager</a>.</p>
+    </article>
+{% endblock %}

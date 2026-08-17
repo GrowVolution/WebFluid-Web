@@ -1,0 +1,425 @@
+{% extends "docs/base.html" %}
+{% from "docs/partials/_code.html" import code %}
+{% from "docs/partials/_callout.html" import info, warning %}
+
+{% block title %}Babel — WebFluid Docs{% endblock %}
+
+{% block docs_content %}
+    <article class="docs-article doc-prose">
+        <span class="doc-kicker">Extensions</span>
+        <h1 class="doc-h1">Babel</h1>
+        <p class="doc-lead">
+            Sending mail to people usually means speaking their language. So the natural next
+            battery is internationalization. Our Babel extension wraps
+            <a href="https://babel.pocoo.org/en/latest/">Babel</a> and gives you familiar
+            <code>gettext</code> in your templates, locale aware formatting filters and a
+            database-backed translation store you can update at runtime.
+        </p>
+
+        <h2>Enabling Babel</h2>
+        <p>
+            Babel leans on the database for its runtime translations, so it requires the SQLAlchemy
+            extension to be enabled. Flip both switches and you are set:
+        </p>
+
+        {{ code(
+            "app_configs/app.ini", "ini",
+            """[general]
+SECRET_KEY = supersecret
+
+[data]
+DATABASE_URI = sqlite:///app.db
+
+[extensions]
+EXT_SQLALCHEMY = 1
+EXT_BABEL = 1"""
+        ) }}
+
+        <p>
+            When Babel expands your fluid it installs the i18n extension into your
+            <code>jinja_env</code>, registers a set of formatting filters and wires up a small
+            WebSocket so the same translations can be reused on the client. It also brings its own
+            models, <code>I18nKey</code> and <code>I18nMessage</code>, which are where runtime
+            translations are persisted.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            Because these are regular db models, they become part of your schema the moment
+            Babel is on. So this is the perfect time to run the migration flow from the previous
+            chapter again (wf migrate revision app -a and wf migrate upgrade app) to create the
+            translation tables.
+        """) }}
+
+        <h2>Translating in templates</h2>
+        <p>
+            The gettext callables are installed new-style, so the usual underscore helper is available
+            everywhere in your templates &mdash; you don't need any special base layout for it, enabling
+            Babel is enough. So we can sprinkle gettext straight into the hand-written
+            <code>index.html</code> we've carried since Getting Started. A source string is its own key
+            &mdash; if no translation is found, the source is returned untouched:
+        </p>
+
+        {{ code(
+            "fluid/templates/index.html", "html",
+            """&lt;title&gt;{{ _('Home') }}&lt;/title&gt;
+
+&lt;!-- ... --&gt;
+
+&lt;h1&gt;{{ _('Hello %(name)s!', name=name) }}&lt;/h1&gt;
+&lt;p&gt;{{ ngettext('%(num)d model', '%(num)d models', count) }}&lt;/p&gt;"""
+        ) }}
+
+        <p>
+            (We'll trade this hand-written page for the framework's own base layout once we reach the
+            <a href="/v/{{ version }}/surface/tooling">Frontend</a> chapters &mdash; the translation calls
+            stay exactly the same.) Alongside <code>gettext</code> you get <code>ngettext</code> (plurals),
+            <code>pgettext</code> (contextual) and <code>npgettext</code>. For strings that are built
+            outside of a request &mdash; module level constants, for example &mdash; reach for the lazy
+            variants like <code>babel.lazy_gettext</code>, which only resolve once they are actually
+            rendered.
+        </p>
+
+        <h2>Providing translations</h2>
+        <p>
+            The fastest way to ship translations is the runtime store. You hand Babel a
+            <strong>resolver</strong> &mdash; a callable that returns your catalog &mdash; and it writes
+            the messages into the translation table and the in-memory cache during startup. The easiest
+            way to build such a resolver is from JSON files with the bundled
+            <code>translation_resolver</code> helper. Note that updates are only accepted
+            <strong>before</strong> the server is up.
+        </p>
+
+        <p>
+            Drop one JSON file per plural form and context into a folder. The plain
+            <code>default.json</code> holds the singular (and non-plural) messages, and every file maps a
+            source string to a list of translations &mdash; one entry per locale:
+        </p>
+
+        {{ code(
+            "fluid/i18n/default.json", "json",
+            '''{
+    "Home": ["Home", "Startseite"],
+    "Hello %(name)s!": ["Hello %(name)s!", "Hallo %(name)s!"]
+}'''
+        ) }}
+
+        <p>
+            Plural forms and contexts are encoded in the file name. A file called
+            <code>pf-other.json</code> carries the <code>other</code> plural form, and
+            <code>ctx-menu.json</code> would carry messages in the <code>menu</code> context (you can even
+            combine them, like <code>pf-other_ctx-menu.json</code>):
+        </p>
+
+        {{ code(
+            "fluid/i18n/pf-other.json", "json",
+            '''{
+    "%(num)d model": ["%(num)d models", "%(num)d Modelle"]
+}'''
+        ) }}
+
+        <p>
+            Then build the resolver from that folder, mapping each locale to its index in the JSON lists,
+            and hand it to Babel. This must run before <code>fluid.mix()</code>, so import the module from
+            your config or factory:
+        </p>
+
+        {{ code(
+            "fluid/i18n/__init__.py", "python",
+            '''from pathlib import Path
+from webfluid.extensions.babel.utils import translation_resolver
+from webfluid.core.ext import babel
+
+
+# "en" is index 0, "de" is index 1 in every JSON list:
+translations = translation_resolver(
+    Path(__file__).parent, { "en": 0, "de": 1 }
+)
+
+# The default domain is called "messages". This must run before
+# fluid.mix(), so make sure the module is imported by then.
+babel.update_translations("messages", translations)'''
+        ) }}
+
+        <h3>More than one catalog</h3>
+        <p>
+            <code>"messages"</code> is just the default domain name. Register another with
+            <code>babel.register_domain("shop")</code> and scope a callable to it with the
+            <code>babel.domain_context("shop")</code> decorator &mdash; useful when an Additive ships its
+            own vocabulary and you do not want it mixed into the main app's.
+            <br><br>
+            A lookup escalates rather than failing: the active domain first, then the default domain, then
+            a domain literally named <code>__fallback__</code> if you registered one, and finally the
+            framework's own catalog. The first domain that actually translates the string wins; if none
+            does, you get the source string back untouched.
+        </p>
+
+        <p>
+            Prefer to keep the catalog in code? <code>update_translations</code> accepts any callable that
+            returns the same shape (<code>locale &rarr; key &rarr; message-data &rarr; message</code>,
+            where <em>message-data</em> is a JSON string like <code>"{}"</code> or
+            <code>{&quot;pf&quot;: &quot;other&quot;}</code>). The <code>translation_resolver</code> just
+            builds that for you from the files above. If you prefer classic <code>.po</code> catalogs as a
+            static fallback, extract them once with the CLI &mdash; more on that below.
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            Translations are db-backed with a runtime cache that is not optimized for very large catalogs
+            yet. If you have big or rarely used strings, you can opt individual keys out of the cache with
+            the I18nMessage store's <code>uncache</code> / <code>recache</code> helpers so they are read
+            straight from the database instead.
+        """) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            A source string is stored once per domain, which is what the key table's
+            <code>(key, domain)</code> constraint enforces &mdash; so two domains can translate the same
+            string differently. The escalation asks each catalog whether it <em>has</em> the message
+            rather than comparing the answer to the source, so a deliberate translation that equals its
+            source &mdash; an English catalog translating <code>Save</code> to <code>Save</code> &mdash;
+            counts as a hit and stops the chain, which is what you meant. Before beta 3 it was read as a
+            miss and the next domain answered instead.
+        """) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            Use symbolic keys like <code>ERROR_TITLE</code> rather than English sentences for any catalog
+            you own. It is what the framework's own catalog does, and it is still the right habit: a key
+            that is not a sentence in any language can never be mistaken for one, reads the same in a
+            diff, and survives an editor rewording the English.
+        """) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            Upgrading from beta 1? That constraint replaced a unique index on the source string alone, so
+            an existing translation database needs a migration to swap the index &mdash; and any messages
+            a second domain wrote against the first domain's key before the fix belong to that first
+            domain and have to be re-imported under their own.
+        """) }}
+
+        <h2>Translating outside a template</h2>
+        <p>
+            Everything above happens while a template renders. When you need a translated string in your
+            own code &mdash; a mail subject, a JSON error message &mdash; the same four calls are available
+            on the extension, in a synchronous and an awaitable flavour:
+        </p>
+
+        {{ code(
+            "fluid/services/notify.py", "python",
+            '''from webfluid.core.ext import babel, mail
+
+
+async def welcome(address: str, value: str):
+    # agettext / angettext / apgettext / anpgettext read anything the cache
+    # does not hold through an async session, instead of blocking the loop.
+    subject = await babel.agettext("Welcome aboard!")
+    body = await babel.agettext("Saved your model: %(value)s", value=value)
+
+    await mail.asend(address, subject, {"plain": body})'''
+        ) }}
+
+        <p>
+            The synchronous <code>gettext</code> family is unchanged and still what the
+            <code>&#123;&#123; _('...') &#125;&#125;</code> callables in your templates use. Reach for the
+            <code>a</code>-variants wherever you are already in async code. There is no
+            <code>alazy_gettext</code>: a lazy string resolves through <code>str()</code>, which cannot
+            await.
+        </p>
+
+        <h2>Selecting the locale</h2>
+        <p>
+            Out of the box Babel resolves the active locale from the <code>lang</code> query parameter,
+            then the <code>lang</code> cookie, then the <code>Accept-Language</code> header (best match
+            against your supported locales) and finally the default. The query parameter first means
+            <code>/?lang=de</code> is enough to preview a page in another language without touching
+            cookies. The timezone works the same way through the <code>tz</code> cookie or the
+            <code>X-Timezone</code> header. You declare your supported set in the config:
+        </p>
+
+        {{ code(
+            "fluid/config.py", "python",
+            '''from webfluid.core.config import register_config
+
+
+@register_config(10)
+class MyConfig:
+    SESSION_COOKIE_SECURE = True
+    MYEXT_BAR = "crazy"
+
+    BABEL_DEFAULT_LOCALE = "en"
+    BABEL_DEFAULT_TIMEZONE = "UTC"
+    BABEL_SUPPORTED_LOCALES = ["en", "de"]'''
+        ) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            Both the locale and the timezone are resolved once per request and cached for it, so a page
+            with two hundred translated strings parses <code>Accept-Language</code> exactly once. A
+            selector you register yourself always wins and is asked every time &mdash; keep it cheap.
+        """) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ info("""
+            Every step of that chain is treated as untrusted input. A <code>?lang=</code> value, a cookie
+            or a header that does not resolve to a real locale or zone is skipped and the next candidate
+            gets its turn, ending at your configured default &mdash; so <code>/?lang=xx</code> is a page
+            in your default language, not a 500. Note the one behavioural change beta 2 made here: a
+            request with no <code>Accept-Language</code> header at all now falls through to
+            <code>BABEL_DEFAULT_LOCALE</code> instead of picking the first entry of
+            <code>BABEL_SUPPORTED_LOCALES</code>. If your supported list does not start with your default,
+            that is a different language than before &mdash; the right one.
+        """) }}
+
+        <p>
+            Need your own logic? Register a selector. Whatever it returns wins over the defaults, and
+            you can temporarily override both with the <code>Babel.force</code> /
+            <code>Babel.aforce</code> context managers:
+        </p>
+
+        {{ code(
+            "example", "python",
+            '''from webfluid.core.ext import babel
+
+
+@babel.locale_selector
+def select_locale():
+    from webfluid.core.context import FluidContext
+    user = FluidContext.current().request.session.get("user")
+    return user["locale"] if user else babel.default_locale
+
+
+# Render something in a fixed locale, no matter the request:
+async with babel.aforce(locale="de"):
+    subject = babel.gettext("Welcome aboard!")'''
+        ) }}
+
+        <h2>Formatting filters</h2>
+        <p>
+            Numbers, dates and currencies should follow the user's locale too. Babel registers a
+            family of filters for exactly that, all locale (and where it matters, timezone) aware:
+        </p>
+
+        {{ code(
+            "fluid/templates/index.html", "html",
+            """&lt;p&gt;{{ model.created_at|datetimeformat }}&lt;/p&gt;
+&lt;p&gt;{{ model.created_at|dateformat('full') }}&lt;/p&gt;
+&lt;p&gt;{{ 1234.5|decimalformat }}&lt;/p&gt;
+&lt;p&gt;{{ 19.99|currencyformat('EUR') }}&lt;/p&gt;
+&lt;p&gt;{{ 0.75|percentformat }}&lt;/p&gt;"""
+        ) }}
+
+        <p>
+            The full set is <code>datetimeformat</code>, <code>dateformat</code>,
+            <code>timeformat</code>, <code>timedeltaformat</code>, <code>numberformat</code>,
+            <code>decimalformat</code>, <code>currencyformat</code>, <code>percentformat</code> and
+            <code>scientificformat</code>.
+        </p>
+
+        <p>
+            Every filter is a plain function in <code>webfluid.extensions.babel.utils</code>, so the same
+            formatting is available in your own code &mdash; together with the two helpers that move a
+            datetime between the user's zone and yours. <code>to_user_timezone</code> reads a naive value
+            as UTC and converts it into the active zone; <code>to_utc</code> is its inverse, reading a
+            naive value as user-local and handing you a naive UTC one back. Store UTC, render local:
+        </p>
+
+        {{ code(
+            "fluid/services/report.py", "python",
+            '''from webfluid.extensions.babel.utils import (
+    format_date, to_user_timezone, to_utc
+)
+
+
+def line(model):
+    local = to_user_timezone(model.created_at)     # UTC in, active zone out
+    return format_date(local, fmt="full")          # keyword is fmt
+
+
+def store(user_input):
+    return to_utc(user_input)                      # naive local in, naive UTC out'''
+        ) }}
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            Both of those changed in beta 2. <code>format_date</code>'s keyword used to be spelled
+            <code>ftm</code>; the typo is gone and the parameter is <code>fmt</code> like every other
+            formatter's. And <code>to_utc</code> used to only drop the offset, which keeps the wall clock
+            and throws the actual instant away &mdash; a Berlin <code>12:00+02:00</code> came back as a
+            naive <code>12:00</code> that everything downstream then read as UTC, two hours off. It
+            converts first now. If you were using it to strip a <code>tzinfo</code>, call
+            <code>replace(tzinfo=None)</code> yourself.
+        """) }}
+
+        <h2>On the frontend</h2>
+        <p>
+            Because the extension also exposes a translation WebSocket, the same catalog is reachable
+            from the browser. WebFluid injects a small <code>i18n.js</code> client that mirrors the
+            server API (<code>_</code>, <code>_n</code>, <code>_p</code>, <code>_np</code>) and caches
+            the active locale in <code>localStorage</code>. We'll come back to client side wiring in
+            the Frontend chapters &mdash; for now it is enough to know it is there.
+            <br><br>
+            The cached half is the half to use. On connect the client asks the socket for the whole
+            catalog of the active locale, keeps it in <code>localStorage</code>, and answers every
+            <code>_()</code> out of it &mdash; no round trip, correct language. Alongside it sits a
+            <code>live</code> namespace that asks the server per string, and that one is currently not
+            trustworthy:
+        </p>
+
+        <span class="my-5">&nbsp;</span>
+
+        {{ warning("""
+            <code>live._()</code> and its siblings answer in <code>BABEL_DEFAULT_LOCALE</code>, whatever
+            the visitor's language is. The <code>translate</code> half of <code>/ws/i18n</code> runs
+            without a request context, so the locale resolution has nothing to read &mdash; while the
+            <code>cache</code> half resolves it correctly, which is why the two disagree. On top of that,
+            <code>live._p</code> and <code>live._np</code> send their context argument in the wrong
+            position and come back wrong even in the default language. Stay on the cached API until this
+            is fixed.
+        """) }}
+
+        <h2>Fallback catalogs</h2>
+        <p>
+            If you want gettext-style <code>.po</code> files as a static fallback below the runtime
+            store, the Babel CLI extracts and compiles them for you, scanning both your project and the
+            framework templates:
+        </p>
+
+        {{ code(
+            "terminal", "bash",
+            """# Produce messages.pot and init / update the catalogs
+wf babel extract
+
+# Turn the .po files into the .mo files Babel reads at runtime
+wf babel compile"""
+        ) }}
+
+        <p>
+            The first command writes a <code>messages.pot</code> and initializes or updates the catalogs
+            under <code>translations/</code>; the second compiles them. Both steps run for you if you ever
+            scaffold a project with <code>wf create project --babel-fallback</code>.
+        </p>
+
+        <h2>The config values</h2>
+        <ul>
+            <li><code>BABEL_DEFAULT_LOCALE</code> / <code>BABEL_DEFAULT_TIMEZONE</code> &mdash; the fallbacks when nothing else resolves. Defaults <strong>"en"</strong> and <strong>"UTC"</strong>.</li>
+            <li><code>BABEL_SUPPORTED_LOCALES</code> &mdash; the set <code>Accept-Language</code> is matched against. Default <strong>["en"]</strong>.</li>
+            <li><code>BABEL_DATE_FORMATS</code> &mdash; the per-kind format map behind the date and time filters.</li>
+            <li><code>BABEL_DATABASE_BIND</code> &mdash; put the two translation tables on a non-default bind. Default <strong>None</strong>.</li>
+            <li><code>BABEL_DISABLE_AUTOUPDATE</code> &mdash; ignore every <code>update_translations</code> call and read whatever is already in the database. Handy once a catalog is stable and you would rather not write it on every boot. Default <strong>False</strong>.</li>
+            <li><code>BABEL_CONFIGURE_JINJA</code> &mdash; install the gettext callables and formatting filters into your template environment. Default <strong>True</strong>.</li>
+            <li><code>BABEL_CONFIGURE_SOCKET</code> &mdash; mount <code>/ws/i18n</code> and inject the client. Default <strong>True</strong>.</li>
+        </ul>
+
+        <h2>Continue reading</h2>
+        <p>From here you can continue straight with <a href="/v/{{ version }}/ext/security">Security</a>.</p>
+    </article>
+{% endblock %}

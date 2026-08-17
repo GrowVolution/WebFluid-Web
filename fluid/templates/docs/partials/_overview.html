@@ -2,7 +2,7 @@
     <div class="doc-item">
         <span class="mk mk-new">+</span>
         <div>
-            <h4>{{ title }}</h4>
+            <h4>{{ title|safe }}</h4>
             <p>{{ description|safe }}</p>
         </div>
     </div>
@@ -12,7 +12,7 @@
     <div class="doc-item">
         <span class="mk mk-fix">✓</span>
         <div>
-            <h4>{{ title }}</h4>
+            <h4>{{ title|safe }}</h4>
             <p>{{ description|safe }}</p>
         </div>
     </div>
@@ -22,7 +22,7 @@
     <div class="doc-item">
         <span class="mk mk-bug">!</span>
         <div>
-            <h4>{{ title }}</h4>
+            <h4>{{ title|safe }}</h4>
             <p>{{ description|safe }}</p>
         </div>
     </div>
@@ -32,7 +32,7 @@
     <div class="doc-item">
         <span class="mk mk-break">✕</span>
         <div>
-            <h4>{{ title }}</h4>
+            <h4>{{ title|safe }}</h4>
             <p>{{ description|safe }}</p>
         </div>
     </div>

@@ -17,8 +17,6 @@ class Config(MyConfig):
 		'type': 'none'
 	}
 
-    HOME_LASTMOD = "2026-08-01"
-
     VERSIONS = {
         "1.0.0a1": {
             "stage": "alpha",
@@ -35,9 +33,13 @@ class Config(MyConfig):
         "1.0.0b2": {
             "stage": "beta",
             "date": "August 03, 2026"
+        },
+        "1.0.0b3": {
+            "stage": "beta",
+            "date": "August 17, 2026"
         }
     }
-    LATEST_VERSION = "1.0.0b2"
+    LATEST_VERSION = "1.0.0b3"
 
     DOCS_ORDER = (
         "index", "get-started",
@@ -53,6 +55,7 @@ class Config(MyConfig):
         "ref/surface", "ref/additives", "ref/utils"
     )
 
+    HOME_LASTMOD = "2026-08-16"
     OCEAN_INDEX_LASTMOD = "2026-08-16"
     OCEAN_SITEMAP_EXTRA = {
         "/terms": "2026-07-11",
