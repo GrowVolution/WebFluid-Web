@@ -11,6 +11,7 @@ dist/
 logs/
 myapp/
 /additives/
+extensions/
 
 [files]
 home.ini
