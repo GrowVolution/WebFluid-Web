@@ -1,4 +1,3 @@
-from fastapi.responses import Response
 from webfluid.core.context import FluidContext
 from datetime import datetime, UTC
 import httpx

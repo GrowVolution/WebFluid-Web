@@ -1,12 +1,15 @@
+###############################################################
+#    Example compose stack for WebFluid-Web orchestration.    #
+###############################################################
+
 services:
   home:
     image: gr0wvolution/webfluid:beta
     command: ["home", "-h", "0.0.0.0"]
     volumes:
-      - /mnt/bulk/webfluid:/app
+      - ./:/app
     networks:
       - traefik
-      - backend
     deploy:
       replicas: 1
       placement:
@@ -15,21 +18,20 @@ services:
       labels:
         - traefik.enable=true
 
-        - traefik.http.routers.fluid.entrypoints=websecure
-        - traefik.http.routers.fluid.rule=Host(`webfluid.dev`) || Host(`www.webfluid.dev`)
-        - traefik.http.routers.fluid.service=fluid
-        - traefik.http.routers.fluid.tls=true
+        - traefik.http.routers.myFramework.entrypoints=websecure
+        - traefik.http.routers.myFramework.rule=Host(`example.com`) || Host(`www.example.com`)
+        - traefik.http.routers.myFramework.service=myFramework
+        - traefik.http.routers.myFramework.tls=true
 
-        - traefik.http.services.fluid.loadbalancer.server.port=8000
+        - traefik.http.services.myFramework.loadbalancer.server.port=8000
 
   docs:
     image: gr0wvolution/webfluid:beta
     command: ["docs", "-h", "0.0.0.0"]
     volumes:
-      - /mnt/bulk/webfluid:/app
+      - ./:/app
     networks:
       - traefik
-      - backend
     deploy:
       replicas: 1
       placement:
@@ -38,21 +40,20 @@ services:
       labels:
         - traefik.enable=true
 
-        - traefik.http.routers.fluidDocs.entrypoints=websecure
-        - traefik.http.routers.fluidDocs.rule=Host(`docs.webfluid.dev`)
-        - traefik.http.routers.fluidDocs.service=fluidDocs
-        - traefik.http.routers.fluidDocs.tls=true
+        - traefik.http.routers.myDocs.entrypoints=websecure
+        - traefik.http.routers.myDocs.rule=Host(`docs.example.com`)
+        - traefik.http.routers.myDocs.service=myDocs
+        - traefik.http.routers.myDocs.tls=true
 
-        - traefik.http.services.fluidDocs.loadbalancer.server.port=8000
+        - traefik.http.services.myDocs.loadbalancer.server.port=8000
 
   ocean:
-    image: gr0wvolution/wf-ocean:latest
-    command: [ "ocean", "-h", "0.0.0.0" ]
+    build: .
+    command: ["ocean", "-h", "0.0.0.0"]
     volumes:
-      - /mnt/bulk/webfluid:/app
+      - ./:/app
     networks:
       - traefik
-      - backend
     deploy:
       replicas: 1
       placement:
@@ -61,14 +62,13 @@ services:
       labels:
         - traefik.enable=true
 
-        - traefik.http.routers.fluidOcean.entrypoints=websecure
-        - traefik.http.routers.fluidOcean.rule=Host(`ocean.webfluid.dev`)
-        - traefik.http.routers.fluidOcean.service=fluidOcean
-        - traefik.http.routers.fluidOcean.tls=true
+        - traefik.http.routers.myOcean.entrypoints=websecure
+        - traefik.http.routers.myOcean.rule=Host(`ocean.example.com`)
+        - traefik.http.routers.myOcean.service=myOcean
+        - traefik.http.routers.myOcean.tls=true
 
-        - traefik.http.services.fluidOcean.loadbalancer.server.port=8000
+        - traefik.http.services.myOcean.loadbalancer.server.port=8000
 
 
 networks:
-  traefik:   { external: true }
-  backend:   { external: true }
+  traefik: { external: true }

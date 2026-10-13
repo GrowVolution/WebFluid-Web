@@ -98,7 +98,7 @@ wf-site/
 │   ├── static/         # shared CSS (Tailwind) and JS
 │   └── i18n/           # base translations
 ├── additives/          # additive packages, enabled by the ocean app
-└── docker-compose.yml  # the three-service deployment
+└── docker-compose.yml  # an example stack for the three services
 ```
 
 The `additives/` directory holds the installable feature modules the Ocean app
@@ -114,8 +114,10 @@ This is a standard WebFluid project, so the usual workflow applies:
   interactive control menu).
 - Styling changes go into `fluid/static/css/tailwind_raw.css` and are compiled to
   `tailwind.css` with the bundled Tailwind tooling.
-- The three production services are described in `docker-compose.yml`, each
-  launching the same image with a different app name.
+- `docker-compose.yml` is an example stack for a Swarm behind Traefik: the three
+  services mount the checkout as `/app` and start the same image with a different
+  app name; `ocean` builds the `Dockerfile`, which adds the Python packages its
+  additives need. Replace the example hostnames with your own.
 
 For the framework itself, see the [WebFluid repository](https://github.com/GrowVolution/WebFluid)
 and the [documentation](https://docs.webfluid.dev).
