@@ -1,30 +1,55 @@
 {
   "HOME_TITLE": [
-  "WebFluid — Async-first fullstack on FastAPI",
-  "WebFluid — Async-first Fullstack auf FastAPI"
+  "WebFluid — the operating system for web apps",
+  "WebFluid — das Betriebssystem für Web-Apps"
   ],
   "HOME_EARLY_ACCESS": ["beta testphase", "Beta-Testphase"],
 
   "HOME_HERO_TITLE_1": [
-  "The fullstack framework that",
-  "Das Fullstack-Framework, das"
+  "The operating system for",
+  "Das Betriebssystem für"
   ],
-  "HOME_HERO_TITLE_FLOW": ["flows async-first", "async-first im Fluss bleibt"],
+  "HOME_HERO_TITLE_FLOW": ["web applications", "Web-Anwendungen"],
   "HOME_HERO_SUB": [
-  "WebFluid sits on top of FastAPI and ships a complete toolkit out of the box. Async everywhere with a sync counterpart for every battery, one CLI for everything, and a modular runtime that grows with your project.",
-  "WebFluid setzt auf FastAPI auf und bringt das komplette Werkzeug schon mit: durchgehend async, für jede Battery ein synchrones Gegenstück, eine CLI für alles – und eine modulare Laufzeit, die mit deinem Projekt mitwächst."
+  "Build your next app from maintained building blocks instead of from zero. WebFluid runs on FastAPI and brings accounts, sign-in, payments and more as installable Additives – each with one maintainer, a written contract and docs your agents can follow.",
+  "Bau deine nächste App aus gepflegten Bausteinen statt von null. WebFluid läuft auf FastAPI und bringt Konten, Login, Zahlungen und mehr als installierbare Additives mit – jedes mit einem Maintainer, einem schriftlichen Contract und Docs, denen deine Agents folgen können."
   ],
   "HOME_READ_DOCS": ["Read the docs", "Zur Dokumentation"],
   "HOME_VIEW_GITHUB": ["View on GitHub", "Auf GitHub ansehen"],
 
   "HOME_WHY_KICKER": ["Why WebFluid", "Warum WebFluid"],
   "HOME_WHY_H2": [
+  "Writing an app is easy now. Standing behind it is not.",
+  "Eine App zu schreiben ist heute leicht. Für sie geradezustehen nicht."
+  ],
+  "HOME_WHY_LEAD": [
+  "An agent generates a working application in minutes, with any stack. But every generated project brings its own login, its own payments, its own permissions – and its own mistakes, which nobody reviews and nobody fixes for the others. The value of WebFluid is not that one more implementation becomes possible. It is that you rarely need a new one.",
+  "Ein Agent erzeugt heute in Minuten eine lauffähige Anwendung, mit jedem Stack. Aber jedes generierte Projekt bringt seinen eigenen Login, seine eigenen Zahlungen, seine eigenen Berechtigungen mit – und seine eigenen Fehler, die niemand prüft und niemand für die anderen behebt. Der Wert von WebFluid ist nicht, dass eine weitere Implementierung möglich wird. Sondern dass du selten eine neue brauchst."
+  ],
+  "HOME_PILLAR1_H3": ["Reuse, don't regenerate", "Wiederverwenden statt neu generieren"],
+  "HOME_PILLAR1_P": [
+  "Features ship as Additives with a written contract. Your project installs and configures them and only writes what is truly its own.",
+  "Features kommen als Additives mit schriftlichem Contract. Dein Projekt installiert und konfiguriert sie – und schreibt nur, was wirklich ihm gehört."
+  ],
+  "HOME_PILLAR2_H3": ["One maintainer, every project benefits", "Ein Maintainer, alle Projekte profitieren"],
+  "HOME_PILLAR2_P": [
+  "Feedback from every project that uses an Additive flows to one place and comes back as one release. A fix reaches everyone, and each solution gets better the more it is used.",
+  "Feedback aus jedem Projekt, das ein Additive nutzt, landet an einem Ort und kommt als ein Release zurück. Ein Fix erreicht alle – und jede Lösung wird besser, je mehr sie genutzt wird."
+  ],
+  "HOME_PILLAR3_H3": ["Built for agents, accountable to people", "Für Agents gebaut, von Menschen verantwortet"],
+  "HOME_PILLAR3_P": [
+  "Every Additive carries a contract and a skill for agents, so they wire in what exists instead of inventing it again. The code stays small and conventional, so a person can review it and stand behind what ships.",
+  "Jedes Additive bringt einen Contract und einen Skill für Agents mit – so binden sie ein, was es gibt, statt es neu zu erfinden. Der Code bleibt klein und konventionell, damit ein Mensch ihn prüfen und für das geradestehen kann, was live geht."
+  ],
+
+  "HOME_STACK_KICKER": ["What you get", "Was drinsteckt"],
+  "HOME_STACK_H2": [
   "Everything you reach for, already wired up",
   "Alles griffbereit, alles schon verdrahtet"
   ],
-  "HOME_WHY_LEAD": [
-  "Most frameworks make you assemble the stack yourself. WebFluid ships the batteries, keeps them consistent across sync and async, and lets you bolt on features through a clean module system instead of a pile of cross-imports.",
-  "Bei den meisten Frameworks baust du dir den Stack erst mühsam zusammen. WebFluid bringt die Batteries mit, hält sie in sync und async konsistent und lässt dich Features über ein sauberes Modulsystem ergänzen – statt über einen Wust von Cross-Imports."
+  "HOME_STACK_LEAD": [
+  "Underneath, WebFluid stays close to the tools you already know – FastAPI, SQLAlchemy, Jinja, Babel, Alembic, Vite and Tailwind – keeps them consistent across sync and async, and puts one CLI in front of them.",
+  "Darunter bleibt WebFluid nah an den Werkzeugen, die du kennst – FastAPI, SQLAlchemy, Jinja, Babel, Alembic, Vite und Tailwind –, hält sie in sync und async konsistent und stellt eine CLI davor."
   ],
 
   "HOME_CARD1_H3": ["Async-first, sync-compatible", "Async-first, sync-kompatibel"],
@@ -43,8 +68,8 @@
   ],
   "HOME_CARD3_H3": ["Modular Additives", "Modulare Additives"],
   "HOME_CARD3_P": [
-  "Build features as self-contained sub apps that share one runtime. Version-pin them, pull them from the Hub, and keep modules from importing each other.",
-  "Bau Features als eigenständige Sub-Apps, die sich eine Laufzeit teilen: auf Versionen gepinnt, aus dem Hub geladen – und ohne dass ein Modul das andere importieren muss."
+  "Build features as self-contained sub apps that share one runtime and talk through events and queries instead of imports. Version-pin them and pull them from the Hub.",
+  "Bau Features als eigenständige Sub-Apps, die sich eine Laufzeit teilen und über Events und Queries statt Imports sprechen – auf Versionen gepinnt und aus dem Hub geladen."
   ],
   "HOME_CARD4_H3": ["Batteries included", "Batteries inklusive"],
   "HOME_CARD4_P": [
@@ -89,17 +114,17 @@
   ],
   "HOME_TERMINAL": ["terminal", "Terminal"],
 
-  "HOME_HUB_H2": ["A Hub for modular Additives", "Ein Hub für modulare Additives"],
+  "HOME_HUB_H2": ["Solutions you share instead of copy", "Lösungen, die man teilt statt kopiert"],
   "HOME_HUB_P": [
-  "WebFluid is modular by design. Ocean will be the place to publish, discover, and pull version-pinned Additives straight into your runtime, so sharing a module is as simple as declaring it in your manifest.",
-  "WebFluid ist von Grund auf modular. Ocean wird der Ort, an dem Additives veröffentlicht, gefunden und versionsgenau in deine Laufzeit geholt werden – ein Modul zu teilen heißt dann nur noch, es im Manifest einzutragen."
+  "Ocean is where Additives are published, discovered and pulled version-pinned into your runtime. Sharing a module is as simple as declaring it in your manifest – and every project that does gets the same fixes from the same maintainer.",
+  "Ocean ist der Ort, an dem Additives veröffentlicht, gefunden und versionsgenau in deine Laufzeit geholt werden. Ein Modul zu teilen heißt nur noch, es im Manifest einzutragen – und jedes Projekt, das das tut, bekommt dieselben Fixes vom selben Maintainer."
   ],
   "HOME_HUB_CTA": ["Explore the Hub", "Hub entdecken"],
 
   "HOME_CTA_H2": ["Ready to build something fluid?", "Bereit, etwas in Fluss zu bringen?"],
   "HOME_CTA_P": [
-  "Dive into the docs and ship your first Additive in minutes.",
-  "Ab in die Docs – dein erstes Additive steht in wenigen Minuten."
+  "Dive into the docs and build your next app from what already exists.",
+  "Ab in die Docs – und bau deine nächste App aus dem, was es schon gibt."
   ],
   "HOME_GET_STARTED": ["Get started", "Loslegen"],
   "HOME_STAR_GITHUB": ["🌟 Star on GitHub", "🌟 Auf GitHub einen Stern geben"],

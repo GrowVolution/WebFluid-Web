@@ -18,6 +18,13 @@ WebFluid-Web provides.
 
 ## Why it exists
 
+WebFluid exists so that applications are assembled from maintained building blocks instead of
+being regenerated from scratch every time — by people or by coding agents. WebFluid-Web is that
+idea applied to the platform itself: three products, one codebase, and almost none of their
+features written here. Accounts, payments, admin screens, tokens, integrity checks and the
+marketplace come from Additives that every other WebFluid project can install the same way; this
+repository adds only what is genuinely specific to the website.
+
 The landing page, the documentation, and the Ocean marketplace are separate
 products with very different needs, but they are all part of the same platform
 and should look and feel like it. Maintaining three independent sites would mean
@@ -31,7 +38,9 @@ literally share the same templates and stylesheet, while still being able to run
 scale, and deploy independently.
 
 It also serves as the reference application for WebFluid itself: the platform's
-own website is built with the framework it promotes.
+own website is built with the framework it promotes — and it is where the Additives of
+the users ecosystem are developed, reviewed and exercised together before they are
+published to Ocean.
 
 ---
 
@@ -90,9 +99,10 @@ dependencies.
 
 ```
 wf-site/
-├── main.py             # entrypoint: builds the app for home / docs / ocean
-├── app_configs/        # per-app .ini configurations
+├── main.py             # entrypoint: imports prepare_fluid() and runs it
+├── app_configs/        # per-app .ini configurations (secrets, switches, [additives])
 ├── fluid/              # the shared website base
+│   ├── __init__.py     # prepare_fluid(): builds the app for home / docs / ocean
 │   ├── app/            # route handlers (index, docs, ocean)
 │   ├── templates/      # base layout, landing page, docs, ocean pages
 │   ├── static/         # shared CSS (Tailwind) and JS
@@ -102,7 +112,10 @@ wf-site/
 ```
 
 The `additives/` directory holds the installable feature modules the Ocean app
-depends on. Each additive is its own repository with its own README and license.
+depends on. Each additive is its own repository with a human-facing `README.md` and
+`CHANGELOG.md`, and an agent-facing `CONTRACT.md` and `.agents/SKILL.md`. Several also
+carry a Flutter SDK in `flutter_sdk/`; `additives/example` is the app that runs all of
+those SDKs together.
 
 ---
 
@@ -111,7 +124,10 @@ depends on. Each additive is its own repository with its own README and license.
 This is a standard WebFluid project, so the usual workflow applies:
 
 - Run a site locally with `wf run <app>` (add `-d` for debug, `-i` for the
-  interactive control menu).
+  interactive control menu). The project targets WebFluid `1.0.0rc1`: the app
+  factory lives in `fluid/__init__.py`, so `wf migrate` builds the real application.
+- After editing an Additive's `CONTRACT.md` or `.agents/` files, run
+  `wf agents index` inside `additives/` to refresh their line-range indexes.
 - Styling changes go into `fluid/static/css/tailwind_raw.css` and are compiled to
   `tailwind.css` with the bundled Tailwind tooling.
 - `docker-compose.yml` is an example stack for a Swarm behind Traefik: the three
