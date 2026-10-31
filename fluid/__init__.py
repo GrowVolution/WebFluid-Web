@@ -1,6 +1,6 @@
 from webfluid import Fluid
-from webfluid.core.ext import babel
 from webfluid.core.config import DefaultConfig
+from webfluid.core.ext import babel
 
 
 def prepare_fluid() -> Fluid:

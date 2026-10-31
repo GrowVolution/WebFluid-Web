@@ -125,19 +125,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return params
     }
 
-    function resolveIcons(scope) {
-        scope.querySelectorAll("img[data-upload-id]").forEach(async (img) => {
-            const id = img.dataset.uploadId
-            if (!id || img.dataset.resolved) return
-            img.dataset.resolved = "1"
-            try {
-                const res = await fetch(`/users/api/v1/upload/url?id=${encodeURIComponent(id)}`)
-                if (!res.ok) return
-                const data = await res.json()
-                if (data && data.url) img.src = data.url
-            } catch {}
-        })
-    }
 
     // staggered reveal
 
@@ -187,7 +174,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             card.dataset.ord = String(ordinal++)
             results.appendChild(card)
-            resolveIcons(card)
             observer.observe(card)
         }
     }

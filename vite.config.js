@@ -2,6 +2,10 @@ import {defineConfig, loadConfigFromFile, mergeConfig} from "vite"
 import fs from "fs"
 import path from "path"
 
+const WATCHED = new Set(["fluid", "additives"])
+const SKIPPED = /(^|[\\/])(node_modules|dist|build|\.dart_tool|__pycache__|\.git)([\\/]|$)/
+const CONFIGS = /\.(js|ts|mjs|cjs|json)$/
+
 async function loadConfigs(command) {
     const additivesDir = path.resolve(__dirname, "additives")
     const configs = []
@@ -74,6 +78,17 @@ function mergeConfigs(configs) {
     return merged
 }
 
+function unwatched(file) {
+    const relative = path.relative(__dirname, file)
+    if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) return false
+    if (SKIPPED.test(relative)) return true
+
+    const parts = relative.split(/[\\/]/)
+    if (parts.length === 1) return !WATCHED.has(parts[0]) && !CONFIGS.test(parts[0])
+    if (parts[0] === "additives") return parts.length > 2 && parts[2] !== "frontend"
+    return parts[0] !== "fluid"
+}
+
 function wfDevPlugin() {
 
     const namespaceRegex = /(fluid\/frontend|additives\/[^/]+\/frontend)/
@@ -82,6 +97,12 @@ function wfDevPlugin() {
 
         name: "wf-dev-plugin",
         enforce: "pre",
+
+        configureServer(server) {
+            server.watcher.on("error", error => {
+                server.config.logger.warn(`[wf] Watching ${error?.path ?? "a file"} failed: ${error?.code ?? error}`)
+            })
+        },
 
         resolveId(id, importer) {
 
@@ -133,6 +154,9 @@ export default defineConfig(async ({ command }) => {
         server: {
             fs: {
                 allow: ["."]
+            },
+            watch: {
+                ignored: [unwatched]
             }
         },
         plugins: []

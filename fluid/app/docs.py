@@ -1,6 +1,6 @@
-from fastapi.responses import RedirectResponse, HTMLResponse, Response
-from webfluid.core.context import FluidContext
 from webfluid.core.constants import FRAMEWORK_ID
+from webfluid.core.context import FluidContext
+from fastapi.responses import RedirectResponse, HTMLResponse, Response
 from datetime import datetime
 
 from fluid.app.http import cached, cacheable

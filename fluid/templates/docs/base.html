@@ -13,7 +13,7 @@
                 <a href="{{ home }}" class="docs-topbar-link">Home</a>
                 <a href="{{ ocean }}" class="docs-topbar-link">Ocean</a>
                 <a href="https://github.com/GrowVolution/WebFluid" class="docs-topbar-link">GitHub</a>
-                <button class="docs-menu-toggle" onclick="document.body.classList.toggle('docs-drawer-open')" aria-label="Toggle menu">
+                <button class="docs-menu-toggle" id="docsMenuToggle" aria-controls="docsSidebar" aria-expanded="false" aria-label="Toggle menu">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
                 </button>
             </div>
@@ -25,7 +25,7 @@
     <div class="web docs">
         <div class="docs-shell">
             {% include "partials/_nav.html" %}
-            <div class="docs-scrim" onclick="document.body.classList.remove('docs-drawer-open')"></div>
+            <button type="button" class="docs-scrim" id="docsMenuScrim" aria-label="Close menu" tabindex="-1"></button>
 
             <div class="docs-content">
                 {% block docs_content %}{% endblock %}
@@ -34,4 +34,26 @@
 
         {{ site_footer() }}
     </div>
+{% endblock %}
+{% block web_scripts %}
+<script>
+    const docsToggle = document.getElementById("docsMenuToggle")
+    const docsSidebar = document.getElementById("docsSidebar")
+    const docsMobile = window.matchMedia("(max-width: 767px)")
+    function setDocsMenu(open) {
+        document.body.classList.toggle("docs-drawer-open", open)
+        docsToggle.setAttribute("aria-expanded", String(open))
+        docsSidebar.inert = docsMobile.matches && !open
+    }
+    docsToggle.addEventListener("click", () => setDocsMenu(docsToggle.getAttribute("aria-expanded") !== "true"))
+    document.getElementById("docsMenuScrim").addEventListener("click", () => setDocsMenu(false))
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && docsToggle.getAttribute("aria-expanded") === "true") {
+            setDocsMenu(false)
+            docsToggle.focus()
+        }
+    })
+    docsMobile.addEventListener("change", () => setDocsMenu(false))
+    setDocsMenu(false)
+</script>
 {% endblock %}
