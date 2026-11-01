@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const REQUEST_TIMEOUT = 12000
 
     const config = window.ocDiscovery || {}
-    const events = new window.wf.ext.events.EventManager()
+    const events = new window.wf.ext.events.EventBus()
 
     const results = document.getElementById("ocResults")
     const more = document.getElementById("ocMore")

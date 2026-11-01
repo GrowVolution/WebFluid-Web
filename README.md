@@ -128,6 +128,11 @@ This is a standard WebFluid project, so the usual workflow applies:
   factory lives in `fluid/__init__.py`, so `wf migrate` builds the real application.
 - After editing an Additive's `CONTRACT.md` or `.agents/` files, run
   `wf agents index` inside `additives/` to refresh their line-range indexes.
+- The framework's central communication interface is `EventBus`. Python consumers
+  use the shared `events` instance from `webfluid.core.ext`; browser consumers use
+  `new window.wf.ext.events.EventBus()`. Rebuild frontend assets after updating the
+  framework so every active consumer uses the renamed constructor. Versioned
+  documentation preserves the API of its original release.
 - Styling changes go into `fluid/static/css/tailwind_raw.css` and are compiled to
   `tailwind.css` with the bundled Tailwind tooling.
 - `docker-compose.yml` is an example stack for a Swarm behind Traefik: the three
