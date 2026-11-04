@@ -1062,6 +1062,76 @@
 
     .oc-muted { @apply text-sm text-slate-500; }
     .oc-profile-empty { @apply max-w-xl mx-auto my-16; }
+
+    .oc-license-model { @apply flex flex-col gap-3; }
+    .oc-license-lifetime {
+        @apply flex items-start gap-4 px-5 py-4 rounded-2xl;
+        background: color-mix(in srgb, var(--tertiary-5) 30%, transparent);
+        border: 1px solid color-mix(in srgb, var(--tertiary-3) 40%, transparent);
+    }
+    .oc-license-mark {
+        @apply shrink-0 w-11 h-11 rounded-xl flex items-center justify-center;
+        color: var(--primary-5);
+        background-image: linear-gradient(135deg, var(--tertiary-1), var(--info-1));
+    }
+    .oc-license-mark svg { @apply w-6 h-6; }
+    .oc-license-title { @apply font-display font-semibold text-base text-slate-100; }
+    .oc-license-text { @apply mt-1 text-sm leading-relaxed text-slate-300; }
+    .oc-license-steps {
+        @apply grid gap-3 list-none p-0 m-0;
+        grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+    }
+    .oc-license-step {
+        @apply relative flex flex-col gap-1 px-4 pt-5 pb-4 rounded-2xl overflow-hidden;
+        background: rgba(255, 255, 255, .04);
+        border: 1px solid rgba(255, 255, 255, .1);
+    }
+    .oc-license-step::before {
+        @apply absolute top-0 inset-x-0 h-0.5;
+        content: "";
+        background: color-mix(in srgb, var(--tertiary-1) 45%, transparent);
+    }
+    .oc-license-step.is-first {
+        background: color-mix(in srgb, var(--tertiary-5) 30%, transparent);
+        border-color: color-mix(in srgb, var(--tertiary-3) 45%, transparent);
+    }
+    .oc-license-step.is-first::before { background-image: linear-gradient(90deg, var(--tertiary-1), var(--info-1)); }
+    .oc-license-step-label { @apply text-xs font-semibold uppercase tracking-wider text-slate-400; }
+    .oc-license-step-price { @apply font-display font-bold text-3xl leading-none mt-1; color: var(--tertiary-1); }
+    .oc-license-step-price small { @apply text-base font-semibold ml-0.5; }
+    .oc-license-step-caption { @apply text-xs text-slate-500; }
+    .oc-license-step-term { @apply mt-2 text-sm leading-snug text-slate-200; }
+    .oc-license-rule { @apply text-xs leading-relaxed text-slate-500; }
+    .oc-license-summary { @apply text-xs text-center leading-relaxed text-slate-400; }
+    .oc-license-summary a { @apply font-semibold ml-1; }
+    .oc-license-offer { @apply text-xs text-center leading-relaxed text-slate-400; }
+    .oc-license-offer s { @apply ml-1 whitespace-nowrap text-slate-500; }
+    .oc-license-kept { @apply text-xs leading-relaxed text-slate-400; }
+    .oc-license-kept summary {
+        @apply cursor-pointer list-none text-center font-semibold;
+        color: var(--tertiary-1);
+    }
+    .oc-license-kept summary::-webkit-details-marker { display: none; }
+    .oc-license-kept[open] summary { @apply mb-3; }
+    .oc-license-status {
+        @apply flex items-start gap-2.5 px-4 py-3 rounded-xl text-sm leading-relaxed text-slate-300;
+        background: color-mix(in srgb, var(--success-5) 30%, transparent);
+        border: 1px solid color-mix(in srgb, var(--success-3) 35%, transparent);
+    }
+    .oc-license-status svg { @apply w-4 h-4 mt-0.5 shrink-0; color: var(--success-1); }
+    .oc-license-status.is-expired {
+        background: color-mix(in srgb, var(--warning-5) 30%, transparent);
+        border-color: color-mix(in srgb, var(--warning-3) 35%, transparent);
+    }
+    .oc-license-status.is-expired svg { color: var(--warning-1); }
+    .oc-version-lock { @apply inline-flex items-center justify-center shrink-0 text-slate-500; }
+    .oc-version-lock svg { @apply w-4 h-4; }
+    .oc-version-chip {
+        @apply font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0;
+        color: var(--info-1);
+        background: color-mix(in srgb, var(--info-5) 40%, transparent);
+        border: 1px solid color-mix(in srgb, var(--info-3) 40%, transparent);
+    }
 }
 
 @layer base {

@@ -14,8 +14,8 @@ class Config(MyConfig):
         "redoc_url": None
     }
     APP_FRONTEND = {
-		'type': 'none'
-	}
+        "type": "none"
+    }
 
     VERSIONS = {
         "1.0.0a1": {
@@ -66,4 +66,4 @@ class Config(MyConfig):
     BABEL_SUPPORTED_LOCALES = [BABEL_DEFAULT_LOCALE, "de"]
 
     PROXY_FIX = True
-    PROXY_TRUSTED_HOSTS = "*"
+    PROXY_TRUSTED_HOSTS = getattr(MyConfig, "PROXY_TRUSTED_HOSTS", "127.0.0.1,::1")

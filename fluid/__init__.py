@@ -6,15 +6,7 @@ from webfluid.core.ext import babel
 def prepare_fluid() -> Fluid:
     _fluid = Fluid(__name__)
     base_url = _fluid.config["BASE_URL"]
-
-    _fluid.add_source('<link rel="preconnect" href="https://fonts.googleapis.com">', 10)
-    _fluid.add_source('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>', 10)
-    _fluid.add_source(
-        '<link href="https://fonts.googleapis.com/css2?'
-        'family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600&'
-        'family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">',
-        10
-    )
+    _fluid.add_source('<link rel="stylesheet" href="/static/fonts/fonts.css">', 10)
 
     if _fluid.name == "home":
         base_url = _fluid.config.get("HOME_URL", "https://webfluid.dev")

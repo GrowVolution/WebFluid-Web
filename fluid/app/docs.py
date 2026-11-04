@@ -25,7 +25,8 @@ def _doc_url(docs_url: str, version: str, latest: str, name: str, markdown: bool
 
 
 def _hidden(name: str) -> bool:
-    return any(part.startswith("_") for part in name.split("/"))
+    return "\\" in name or ":" in name or any(part.startswith(("_", ".")) or not part
+                                                for part in name.split("/"))
 
 
 def _wants_markdown(ctx) -> bool:
@@ -91,6 +92,8 @@ async def _render_docs(ctx, version: str, nav_version: str, path: str):
 
     name = stripped or "index"
     doc_dir = _docs_root(ctx) / version
+    if not (doc_dir / name).resolve().is_relative_to(doc_dir.resolve()):
+        return await _not_found(ctx)
     has_markdown = (doc_dir / f"{name}{MARKDOWN_SUFFIX}").is_file()
 
     if explicit:
