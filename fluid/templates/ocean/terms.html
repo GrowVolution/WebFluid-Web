@@ -3,10 +3,10 @@
 
 {% block skip_link %}{% endblock %}
 
-{% block title %}{{ _("OCEAN_TERMS_TITLE") }} — WebFluid Ocean{% endblock %}
+{% block title %}{{ _("OCEAN_TERMS_TITLE", **ocean_legal) }} — WebFluid Ocean{% endblock %}
 
 {% block web_head %}
-    <meta name="description" content="{{ _("OCEAN_TERMS_INTRO") }}">
+    <meta name="description" content="{{ _("OCEAN_TERMS_INTRO", **ocean_legal) }}">
 {% endblock %}
 
 {% block nav %}
@@ -42,50 +42,71 @@
 
 {% block content %}
     <div class="web lp oc-page">
-        <section class="oc-hero">
-            <h1 class="oc-title">{{ _("OCEAN_TERMS_TITLE") }}</h1>
-            <p class="oc-sub">{{ _("OCEAN_TERMS_INTRO") }}</p>
+        <section class="oc-hero" {{ legal_terms_attribute }}>
+            <h1 class="oc-title">{{ _("OCEAN_TERMS_TITLE", **ocean_legal) }}</h1>
+            <p class="oc-sub">{{ _("OCEAN_TERMS_INTRO", **ocean_legal) }}</p>
         </section>
 
-        <div class="oc-legal">
-            <h2>{{ _("OCEAN_TERMS_OPERATOR_H") }}</h2>
-            <p>{{ _("OCEAN_TERMS_OPERATOR_P") }}</p>
+        <div class="oc-legal" {{ legal_terms_attribute }}>
+            <p>{{ _("OCEAN_LEGAL_UPDATED") }}</p>
+            <h2>{{ _("OCEAN_TERMS_OPERATOR_H", **ocean_legal) }}</h2>
+            <p>{{ _("OCEAN_TERMS_OPERATOR_P", **ocean_legal) }}</p>
+            <p><a href="https://growvolution.org/imprint">{{ _("IMPRINT") }}</a> · <a href="https://growvolution.org/privacy">{{ _("PRIVACY") }}</a></p>
 
-            <h2>{{ _("OCEAN_TERMS_USAGE_H") }}</h2>
-            <p>{{ _("OCEAN_TERMS_USAGE_P") }}</p>
+            <h2>{{ _("OCEAN_TERMS_USAGE_H", **ocean_legal) }}</h2>
+            <p>{{ _("OCEAN_TERMS_USAGE_P", **ocean_legal) }}</p>
 
-            <h2>{{ _("OCEAN_TERMS_MOR_H") }}</h2>
-            <p>{{ _("OCEAN_TERMS_MOR_P") }}</p>
+            <h2>{{ _("OCEAN_TERMS_MOR_H", **ocean_legal) }}</h2>
+            <p>{{ _("OCEAN_TERMS_MOR_PLATFORM_P", **ocean_legal) if ocean_legal.partner == "platform" else _("OCEAN_TERMS_MOR_P", **ocean_legal) }}</p>
 
-            <h2>{{ _("OCEAN_TERMS_PRICES_H") }}</h2>
-            <p>{{ _("OCEAN_TERMS_PRICES_P") }}</p>
+            <h2>{{ _("OCEAN_TERMS_PRICES_H", **ocean_legal) }}</h2>
+            <p>{{ _("OCEAN_TERMS_PRICES_P", **ocean_legal) }}</p>
 
-            <h2>{{ _("OCEAN_TERMS_AVAILABILITY_H") }}</h2>
-            <p>{{ _("OCEAN_TERMS_AVAILABILITY_P") }}</p>
+            <h2>{{ _("OCEAN_TERMS_ORDER_H", **ocean_legal) }}</h2>
+            <p>{{ _("OCEAN_TERMS_ORDER_P", **ocean_legal) }}</p>
 
-            <h2>{{ _("OCEAN_TERMS_CHANGES_H") }}</h2>
-            <p>{{ _("OCEAN_TERMS_CHANGES_P") }}</p>
+            <h2>{{ _("OCEAN_TERMS_CONTRACT_H", **ocean_legal) }}</h2>
+            <p>{{ _("OCEAN_TERMS_CONTRACT_P", **ocean_legal) }}</p>
 
-            <h2>{{ _("OCEAN_TERMS_ABUSE_H") }}</h2>
-            <p>{{ _("OCEAN_TERMS_ABUSE_P") }}</p>
+            <h2>{{ _("OCEAN_TERMS_LICENSE_H", **ocean_legal) }}</h2>
+            <p>{{ _("OCEAN_TERMS_LICENSE_P", **ocean_legal) }}</p>
 
-            <h2>{{ _("OCEAN_TERMS_ACCOUNT_H") }}</h2>
-            <p>{{ _("OCEAN_TERMS_ACCOUNT_P") }}</p>
+            <h2>{{ _("OCEAN_TERMS_LIFECYCLE_H", **ocean_legal) }}</h2>
+            <p>{{ _("OCEAN_TERMS_LIFECYCLE_P", **ocean_legal) }}</p>
 
-            <h2>{{ _("OCEAN_TERMS_IP_H") }}</h2>
-            <p>{{ _("OCEAN_TERMS_IP_P") }}</p>
+            <h2>{{ _("OCEAN_TERMS_AVAILABILITY_H", **ocean_legal) }}</h2>
+            <p>{{ _("OCEAN_TERMS_AVAILABILITY_P", **ocean_legal) }}</p>
 
-            <h2>{{ _("OCEAN_TERMS_LIABILITY_H") }}</h2>
-            <p>{{ _("OCEAN_TERMS_LIABILITY_P") }}</p>
+            <h2>{{ _("OCEAN_TERMS_CHANGES_H", **ocean_legal) }}</h2>
+            <p>{{ _("OCEAN_TERMS_CHANGES_P", **ocean_legal) }}</p>
 
-            <h2>{{ _("OCEAN_TERMS_SUPPORT_H") }}</h2>
-            <p>{{ _("OCEAN_TERMS_SUPPORT_P") }}</p>
+            <h2>{{ _("OCEAN_TERMS_ABUSE_H", **ocean_legal) }}</h2>
+            <p>{{ _("OCEAN_TERMS_ABUSE_P", **ocean_legal) }}</p>
 
-            <h2>{{ _("OCEAN_TERMS_WITHDRAWAL_H") }}</h2>
-            <p>{{ _("OCEAN_TERMS_WITHDRAWAL_P") }}</p>
+            <h2>{{ _("OCEAN_TERMS_REVIEW_H", **ocean_legal) }}</h2>
+            <p>{{ _("OCEAN_TERMS_REVIEW_P", **ocean_legal) }}</p>
 
-            <h2>{{ _("OCEAN_TERMS_LAW_H") }}</h2>
-            <p>{{ _("OCEAN_TERMS_LAW_P") }}</p>
+            <h2>{{ _("OCEAN_TERMS_MODERATION_H", **ocean_legal) }}</h2>
+            <p>{{ _("OCEAN_TERMS_MODERATION_P", **ocean_legal) }}</p>
+
+            <h2>{{ _("OCEAN_TERMS_ACCOUNT_H", **ocean_legal) }}</h2>
+            <p>{{ _("OCEAN_TERMS_ACCOUNT_P", **ocean_legal) }}</p>
+
+            <h2>{{ _("OCEAN_TERMS_IP_H", **ocean_legal) }}</h2>
+            <p>{{ _("OCEAN_TERMS_IP_P", **ocean_legal) }}</p>
+            <p><a href="/licensing">{{ _("OCEAN_LICENSING_TITLE") }}</a></p>
+
+            <h2>{{ _("OCEAN_TERMS_LIABILITY_H", **ocean_legal) }}</h2>
+            <p>{{ _("OCEAN_TERMS_LIABILITY_P", **ocean_legal) }}</p>
+
+            <h2>{{ _("OCEAN_TERMS_SUPPORT_H", **ocean_legal) }}</h2>
+            <p>{{ _("OCEAN_TERMS_SUPPORT_P", **ocean_legal) }}</p>
+
+            <h2>{{ _("OCEAN_TERMS_WITHDRAWAL_H", **ocean_legal) }}</h2>
+            <p>{{ _("OCEAN_TERMS_WITHDRAWAL_P", **ocean_legal) }}</p>
+
+            <h2>{{ _("OCEAN_TERMS_LAW_H", **ocean_legal) }}</h2>
+            <p>{{ _("OCEAN_TERMS_LAW_P", **ocean_legal) }}</p>
         </div>
 
         {{ ocean_footer() }}

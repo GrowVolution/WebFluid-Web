@@ -58,8 +58,8 @@ class Config(MyConfig):
     HOME_LASTMOD = "2026-10-22"
     OCEAN_INDEX_LASTMOD = "2026-08-16"
     OCEAN_SITEMAP_EXTRA = {
-        "/terms": "2026-07-11",
-        "/licensing": "2026-07-11"
+        "/terms": "2026-11-04",
+        "/licensing": "2026-11-04"
     }
 
     BABEL_DEFAULT_LOCALE = "en"

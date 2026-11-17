@@ -48,6 +48,7 @@
         </section>
 
         <div class="oc-legal">
+            <p>{{ _("OCEAN_LEGAL_UPDATED") }}</p>
             <h2>{{ _("OCEAN_LICENSING_WEB_H") }}</h2>
             <p>{{ _("OCEAN_LICENSING_WEB_P") }}</p>
             <p>
@@ -72,12 +73,16 @@
                 · {{ _("LICENSE") }}: GPL v3
             </p>
 
+            <h2>{{ _("OCEAN_LICENSING_PEERING_H") }}</h2>
+            <p>{{ _("OCEAN_LICENSING_PEERING_P") }}</p>
+
             <h2>{{ _("OCEAN_LICENSING_PROPRIETARY_H") }}</h2>
             <p>{{ _("OCEAN_LICENSING_PROPRIETARY_P") }}</p>
             <ul>
                 <li><code>users</code></li>
                 <li><code>users-admin</code></li>
                 <li><code>users-jwt</code></li>
+                <li><code>users-chat</code></li>
                 <li><code>stripe</code></li>
                 <li><code>stripe-connect</code></li>
                 <li><code>ocean</code></li>
@@ -87,6 +92,9 @@
                 · {{ _("LICENSE") }}: ARR (All Rights Reserved)
             </p>
             <p>{{ _("OCEAN_LICENSING_PROPRIETARY_GRANT") }}</p>
+
+            <h2>{{ _("OCEAN_LICENSING_DOCUMENTS_H") }}</h2>
+            <p>{{ _("OCEAN_LICENSING_DOCUMENTS_P") }}</p>
         </div>
 
         {{ ocean_footer() }}
