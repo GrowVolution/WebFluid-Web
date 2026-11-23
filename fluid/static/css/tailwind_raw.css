@@ -49,31 +49,12 @@
     --color-info-4: var(--info-4);
     --color-info-5: var(--info-5);
 
-    --font-display: "Sora", sans-serif;
-    --font-body: "Inter", system-ui, sans-serif;
-    --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    --font-display: var(--display, "Sora"), sans-serif;
+    --font-body: var(--body, "Inter"), system-ui, sans-serif;
+    --font-mono: var(--mono, "JetBrains Mono"), ui-monospace, monospace;
 }
 
 @layer base {
-    :root {
-        --wf-blend: color-mix(in srgb,
-                var(--primary-5, var(--default-5)) 62%,
-                var(--secondary-5, var(--default-4)));
-        --wf-deep: color-mix(in srgb, var(--wf-blend) 52%, #000);
-        --wf-veil: color-mix(in srgb, var(--wf-blend) 90%, #000);
-        --wf-sunk: color-mix(in srgb, var(--wf-blend) 78%, #000);
-
-        --wf-panel: color-mix(in srgb, var(--wf-veil) 93%, white);
-        --wf-panel-soft: color-mix(in srgb, var(--wf-veil) 97%, white);
-        --wf-line: rgb(255 255 255 / 0.12);
-        --wf-shadow: 0 12px 32px rgb(0 0 0 / 0.16);
-        --wf-page:
-                radial-gradient(900px 600px at 78% -8%, color-mix(in srgb, var(--secondary-2) 32%, transparent), transparent 60%),
-                radial-gradient(800px 600px at 8% 22%, color-mix(in srgb, var(--tertiary-3) 28%, transparent), transparent 55%),
-                radial-gradient(1200px 720px at 50% 110%, color-mix(in srgb, var(--tertiary-4) 30%, transparent), transparent 62%),
-                linear-gradient(180deg, var(--primary-5, var(--default-5)), var(--wf-deep) 76%);
-    }
-
     .web {
         @apply font-body text-slate-100;
     }
@@ -89,21 +70,19 @@
 
 @layer components {
     .web-btn {
-        @apply inline-flex min-h-11 items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-base transition;
+        @apply inline-flex min-h-11 items-center justify-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors;
     }
     .web-btn-primary {
-        @apply text-primary-5 bg-linear-to-r from-tertiary-1 to-info-1;
-        box-shadow: 0 12px 35px color-mix(in srgb, var(--tertiary-2) 45%, transparent);
+        @apply text-primary-5 bg-tertiary-1;
     }
     .web-btn-primary:hover:not(:disabled) {
-        @apply -translate-y-0.5;
-        box-shadow: 0 18px 45px color-mix(in srgb, var(--tertiary-2) 55%, transparent);
+        background: color-mix(in srgb, var(--tertiary-1) 86%, white);
     }
     .web-btn-ghost {
         @apply text-slate-100 bg-white/5 border border-white/10;
     }
     .web-btn-ghost:hover:not(:disabled) {
-        @apply bg-white/10 -translate-y-0.5;
+        @apply bg-white/10;
     }
     .web-btn-soft {
         @apply text-slate-100 -translate-y-0;
@@ -168,7 +147,7 @@
     }
     .lp-hero {
         @apply relative max-w-7xl mx-auto px-6 grid gap-10 items-center;
-        padding-top: clamp(4rem, 9vw, 8rem);
+        padding-top: clamp(2.75rem, 6vw, 5rem);
         padding-bottom: clamp(3rem, 6vw, 5rem);
         grid-template-columns: 1fr;
     }
@@ -176,12 +155,7 @@
         .lp-hero { grid-template-columns: 1.05fr .95fr; }
     }
     .lp-eyebrow {
-        @apply inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide bg-white/5 border border-white/10;
-        backdrop-filter: blur(10px);
-    }
-    .lp-eyebrow .pulse {
-        @apply w-2 h-2 rounded-full bg-tertiary-1;
-        animation: lp-pulse 2.4s infinite;
+        @apply text-sm font-medium text-slate-400;
     }
     @keyframes lp-pulse {
         0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--tertiary-1) 60%, transparent); }
@@ -189,13 +163,12 @@
         100% { box-shadow: 0 0 0 0 transparent; }
     }
     .lp-title {
-        @apply font-display font-extrabold tracking-tight mt-6;
+        @apply font-display font-semibold tracking-tight mt-4;
         font-size: clamp(2.5rem, 6vw, 4.25rem);
         line-height: 1.04;
     }
     .lp-title .flow {
-        @apply text-transparent bg-clip-text;
-        background-image: linear-gradient(120deg, var(--tertiary-1), var(--info-1) 45%, var(--secondary-1));
+        color: var(--tertiary-1);
     }
     .lp-sub {
         @apply mt-6 max-w-lg text-lg leading-relaxed text-slate-400;
@@ -206,17 +179,8 @@
     .lp-visual {
         @apply relative flex justify-center lg:justify-end;
     }
-    .lp-visual-glow {
-        @apply absolute blur-3xl;
-        inset: -14% -10% -20%;
-        background: radial-gradient(closest-side, color-mix(in srgb, var(--tertiary-2) 42%, transparent), transparent 75%);
-        z-index: 0;
-    }
     .lp-visual img {
-        @apply relative w-full max-w-xl rounded-3xl border border-white/10;
-        z-index: 1;
-        box-shadow: 0 30px 70px rgba(0, 0, 0, .5);
-        animation: lp-float 7s ease-in-out infinite;
+        @apply block w-full max-w-xl rounded-xl;
     }
     @keyframes lp-float {
         0%, 100% { transform: translateY(0); }
@@ -238,23 +202,17 @@
         @apply mt-4 max-w-2xl text-slate-400 leading-relaxed;
     }
     .lp-grid {
-        @apply mt-12 grid gap-5;
-        grid-template-columns: repeat(1, minmax(0, 1fr));
+        @apply mt-8 grid gap-x-8 gap-y-7;
+        grid-template-columns: minmax(0, 1fr);
     }
     @media (min-width: 640px) { .lp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     @media (min-width: 1024px) { .lp-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
     .lp-card {
-        @apply relative p-6 rounded-2xl bg-white/5 border border-white/10 transition;
-        backdrop-filter: blur(12px);
-    }
-    .lp-card:hover {
-        @apply -translate-y-1 bg-white/[.06];
-        border-color: color-mix(in srgb, var(--tertiary-1) 40%, transparent);
+        @apply min-w-0 pt-5 border-t;
+        border-color: var(--wf-line);
     }
     .lp-card-ic {
-        @apply w-11 h-11 rounded-xl flex items-center justify-center mb-4 text-tertiary-1;
-        background: color-mix(in srgb, var(--tertiary-3) 25%, transparent);
-        border: 1px solid color-mix(in srgb, var(--tertiary-1) 30%, transparent);
+        @apply flex items-center mb-4 text-tertiary-1;
     }
     .lp-card h3 {
         @apply font-display font-semibold text-lg;
@@ -288,9 +246,10 @@
     }
     .lp-quickstart-link:hover { @apply gap-3 text-info-1; }
     .lp-terminal {
+        min-width: 0;
         @apply rounded-2xl overflow-hidden border border-white/10;
-        background: #08111f;
-        box-shadow: 0 30px 60px rgba(0, 0, 0, .45);
+        background: var(--wf-panel);
+        box-shadow: var(--wf-shadow);
     }
     .lp-terminal-bar {
         @apply flex items-center gap-2 px-4 py-3 bg-white/[.03] border-b border-white/10;
@@ -325,28 +284,28 @@
     .lp-hub-action { @apply flex justify-start; }
     @media (min-width: 820px) { .lp-hub-action { @apply justify-end; } }
     .lp-cta {
-        @apply relative mx-auto rounded-3xl text-center overflow-hidden border border-white/10;
-        width: calc(100% - 3rem);
-        max-width: 80rem;
-        margin-bottom: clamp(4rem, 8vw, 6rem);
-        padding: clamp(3rem, 6vw, 4.5rem) 2rem;
-        background:
-                radial-gradient(600px 300px at 50% -20%, color-mix(in srgb, var(--tertiary-2) 45%, transparent), transparent 70%),
-                linear-gradient(120deg, var(--primary-4), var(--secondary-4));
+        @apply w-full border-t text-left;
+        border-color: var(--wf-line);
+        background: var(--wf-panel);
+        padding: clamp(2rem, 5vw, 4rem) max(1.5rem, calc((100% - 77rem) / 2));
     }
     .lp-cta h2 {
         @apply font-display font-bold tracking-tight;
         font-size: clamp(1.9rem, 4vw, 2.8rem);
     }
     .lp-cta p { @apply mt-3.5 text-slate-400; }
-    .lp-cta .lp-actions { @apply justify-center mt-8; }
+    .lp-cta .lp-actions {
+        @apply justify-start mt-6;
+    }
     .lp-footer-wrap { @apply mt-auto; }
-    .lp-rise { animation: lp-rise .7s ease both; }
+    .lp-rise {
+        animation: lp-rise .22s ease-out both;
+    }
     .lp-d1 { animation-delay: .08s; }
     .lp-d2 { animation-delay: .16s; }
     .lp-d3 { animation-delay: .24s; }
     @keyframes lp-rise {
-        from { opacity: 0; transform: translateY(18px); }
+        from { opacity: 0; transform: translateY(4px); }
         to { opacity: 1; transform: translateY(0); }
     }
 
@@ -368,25 +327,6 @@
     }
     .docs-menu-toggle {
         @apply hidden p-1.5 rounded-lg text-slate-400 bg-white/5 border border-white/10 cursor-pointer hover:text-slate-100;
-    }
-    .oc-nav { @apply relative; }
-    .oc-nav-checkbox { @apply hidden; }
-    .oc-nav-toggle {
-        @apply hidden items-center justify-center p-2 rounded-lg text-slate-400 bg-white/5 border border-white/10 cursor-pointer transition hover:text-slate-100;
-    }
-    .oc-nav-toggle svg { @apply w-5 h-5; }
-    .oc-nav-menu { @apply flex items-center gap-1; }
-    @media (max-width: 767px) {
-        .oc-nav-toggle { @apply flex; }
-        .oc-nav-menu {
-            @apply absolute right-0 top-full mt-2 p-1.5 flex-col items-stretch gap-0.5 rounded-xl border border-white/10 z-[110];
-            min-width: 11rem;
-            background: var(--wf-veil);
-            backdrop-filter: blur(14px);
-            box-shadow: 0 18px 45px rgba(0, 0, 0, .5);
-            display: none;
-        }
-        .oc-nav-checkbox:checked ~ .oc-nav-menu { display: flex; }
     }
     .docs-shell {
         @apply flex w-full;
@@ -468,9 +408,7 @@
     .docs-content {
         @apply flex-1 min-w-0;
         padding: clamp(2rem, 4vw, 3.25rem) clamp(1.25rem, 4vw, 3.5rem) 5rem;
-        background:
-                radial-gradient(700px 400px at 90% -10%, color-mix(in srgb, var(--secondary-3) 22%, transparent), transparent 60%),
-                #0a1426;
+        background: var(--wf-deep);
     }
     .docs-article { @apply max-w-2xl; }
     .docs-scrim { @apply hidden; }
@@ -611,7 +549,7 @@
 
     .doc-code {
         @apply mt-5 rounded-2xl overflow-hidden border border-white/10;
-        background: #08111f;
+        background: var(--wf-sunk);
         box-shadow: 0 14px 40px rgba(0, 0, 0, .35);
     }
     .doc-code-bar {
@@ -636,700 +574,6 @@
     }
 }
 
-@layer components {
-    .oc-avatar {
-        @apply w-9 h-9 ml-2 rounded-full overflow-hidden flex items-center justify-center transition;
-        background: color-mix(in srgb, var(--tertiary-3) 30%, transparent);
-        border: 1px solid color-mix(in srgb, var(--tertiary-1) 40%, transparent);
-    }
-    .oc-avatar:hover {
-        @apply -translate-y-0.5;
-        border-color: var(--tertiary-1);
-        box-shadow: 0 8px 22px color-mix(in srgb, var(--tertiary-2) 45%, transparent);
-    }
-    .oc-avatar span {
-        @apply font-display font-bold text-sm text-tertiary-1;
-    }
-    .oc-avatar img {
-        @apply w-full h-full object-cover object-center;
-    }
-    .oc-login {
-        @apply ml-2 !px-4 !py-2 text-sm;
-    }
-
-
-    .oc-testbanner {
-        @apply w-full border-b border-white/10;
-        background: linear-gradient(90deg,
-            color-mix(in srgb, var(--tertiary-2) 16%, transparent),
-            color-mix(in srgb, var(--info-3) 12%, transparent));
-    }
-    .oc-testbanner-inner {
-        @apply max-w-7xl mx-auto px-6 py-2.5 text-center;
-    }
-    .oc-testbanner-text {
-        @apply text-sm leading-relaxed text-slate-200;
-    }
-    .oc-testbanner-link {
-        @apply font-semibold underline underline-offset-2 transition;
-        color: var(--tertiary-1);
-        text-decoration-color: color-mix(in srgb, var(--tertiary-1) 45%, transparent);
-    }
-    .oc-testbanner-link:hover {
-        text-decoration-color: var(--tertiary-1);
-    }
-
-
-    .oc-hero {
-        @apply relative max-w-7xl mx-auto px-6 text-center flex flex-col items-center;
-        padding-top: clamp(3.5rem, 7vw, 6rem);
-        padding-bottom: clamp(1.5rem, 3vw, 2.5rem);
-    }
-    .oc-title {
-        @apply font-display font-extrabold tracking-tight mt-6;
-        font-size: clamp(2.1rem, 5vw, 3.4rem);
-        line-height: 1.08;
-    }
-    .oc-sub {
-        @apply mt-5 max-w-2xl text-lg leading-relaxed text-slate-400;
-    }
-    .oc-filters {
-        @apply mt-9 flex flex-wrap items-center justify-center gap-3 w-full max-w-3xl;
-    }
-    .oc-input {
-        @apply flex-1 min-w-56 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10
-        text-slate-100 placeholder-slate-500 transition;
-    }
-    .oc-input:focus {
-        @apply outline-none;
-        border-color: color-mix(in srgb, var(--tertiary-1) 50%, transparent);
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--tertiary-1) 20%, transparent);
-    }
-    .oc-select {
-        @apply px-4 py-2.5 pr-9 rounded-xl bg-white/5 border border-white/10 text-slate-100
-        text-sm cursor-pointer transition appearance-none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 0.75rem center;
-        background-size: 1rem;
-    }
-    .oc-select option {
-        background-color: var(--wf-veil);
-        color: #e2e8f0;
-    }
-    .oc-filter-btn {
-        @apply !px-5 !py-2.5 text-sm;
-    }
-
-
-    .oc-results-wrap {
-        @apply relative max-w-7xl mx-auto px-6 w-full flex-1;
-        padding-top: clamp(1.5rem, 3vw, 2.5rem);
-        padding-bottom: clamp(3rem, 6vw, 4.5rem);
-    }
-    .oc-grid {
-        @apply grid gap-5;
-        grid-template-columns: repeat(1, minmax(0, 1fr));
-    }
-    @media (min-width: 640px) { .oc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    @media (min-width: 1024px) { .oc-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-    .oc-grid-live .oc-card { visibility: hidden; }
-    .oc-grid-live .oc-card.is-in {
-        visibility: visible;
-        animation: oc-zoom-in .34s cubic-bezier(.2, .8, .3, 1.05) backwards;
-    }
-    @keyframes oc-zoom-in {
-        from { opacity: 0; transform: scale(.88); }
-        to { opacity: 1; transform: scale(1); }
-    }
-    @media (prefers-reduced-motion: reduce) {
-        .oc-grid-live .oc-card.is-in { animation: none; }
-    }
-    .oc-more-wrap {
-        @apply mt-10 flex justify-center;
-    }
-
-
-    .oc-card {
-        @apply relative p-5 sm:p-6 rounded-2xl border transition flex flex-col gap-4;
-        border-color: var(--wf-line);
-        background: linear-gradient(145deg, var(--wf-panel), var(--wf-panel-soft));
-        box-shadow: var(--wf-shadow);
-        backdrop-filter: blur(12px);
-    }
-    .oc-card:hover {
-        @apply -translate-y-1 bg-white/[.06];
-        border-color: color-mix(in srgb, var(--tertiary-1) 40%, transparent);
-    }
-    .oc-card-head {
-        @apply flex items-start gap-3;
-    }
-    .oc-card-emoji {
-        @apply shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-2xl leading-none overflow-hidden;
-        background: rgba(255, 255, 255, .04);
-    }
-    .oc-entity-img {
-        @apply w-full h-full object-cover object-center;
-    }
-    .oc-entity-emoji {
-        @apply leading-none;
-    }
-    .oc-card-id {
-        @apply min-w-0 flex-1;
-    }
-    .oc-card-id h3 {
-        @apply font-display font-semibold text-base truncate text-slate-100;
-    }
-    .oc-card-id code {
-        @apply font-mono text-xs text-slate-500 truncate block;
-    }
-    .oc-badge {
-        @apply shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold;
-    }
-    .oc-badge-price {
-        color: var(--warning-1);
-        background: color-mix(in srgb, var(--warning-5) 40%, transparent);
-        border: 1px solid color-mix(in srgb, var(--warning-3) 40%, transparent);
-    }
-    .oc-badge-free {
-        color: var(--success-1);
-        background: color-mix(in srgb, var(--success-5) 40%, transparent);
-        border: 1px solid color-mix(in srgb, var(--success-3) 40%, transparent);
-    }
-    .oc-badge-owned {
-        color: var(--tertiary-1);
-        background: color-mix(in srgb, var(--tertiary-5) 40%, transparent);
-        border: 1px solid color-mix(in srgb, var(--tertiary-3) 40%, transparent);
-    }
-    .oc-badge-dev {
-        color: var(--info-1);
-        background: color-mix(in srgb, var(--info-5) 40%, transparent);
-        border: 1px solid color-mix(in srgb, var(--info-3) 40%, transparent);
-    }
-    .oc-card-desc {
-        @apply text-sm leading-relaxed text-slate-400;
-        display: -webkit-box;
-        -webkit-line-clamp: 3;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-    .oc-card-chips {
-        @apply flex flex-wrap gap-1.5;
-    }
-    .oc-chip {
-        @apply font-mono text-xs px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-slate-300;
-    }
-    .oc-card-meta {
-        @apply mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500;
-    }
-    .oc-card-owner {
-        @apply text-slate-300 font-medium;
-    }
-    .oc-buy {
-        @apply w-full mt-1 px-4 py-2 rounded-xl text-sm font-semibold transition cursor-pointer;
-        color: var(--primary-5);
-        background-image: linear-gradient(90deg, var(--tertiary-1), var(--info-1));
-        box-shadow: 0 8px 24px color-mix(in srgb, var(--tertiary-2) 35%, transparent);
-    }
-    .oc-buy:hover:not(:disabled) {
-        @apply -translate-y-0.5;
-        box-shadow: 0 12px 30px color-mix(in srgb, var(--tertiary-2) 45%, transparent);
-    }
-    .oc-buy:disabled {
-        @apply opacity-50 cursor-not-allowed;
-    }
-    .oc-empty {
-        @apply col-span-full flex flex-col items-center gap-3 py-16 rounded-2xl
-        border border-dashed border-white/10 text-center;
-        background: rgba(255, 255, 255, .02);
-    }
-    .oc-empty span { @apply text-4xl opacity-60; }
-    .oc-empty p { @apply text-sm text-slate-400; }
-
-
-    .oc-panel {
-        @apply fixed inset-0 z-[200] flex items-center justify-center px-4 py-4;
-        background: rgba(0, 0, 0, .6);
-        backdrop-filter: blur(6px);
-    }
-    .oc-panel-card {
-        @apply w-full max-w-md p-7 rounded-2xl border border-white/10 flex flex-col gap-4 text-center items-center;
-        max-height: min(44rem, calc(100dvh - 2rem));
-        overflow-y: auto;
-        overscroll-behavior: contain;
-        background: var(--wf-veil);
-        box-shadow: 0 30px 70px rgba(0, 0, 0, .5);
-    }
-    .oc-panel-card:has(> .oc-panel-body) { overflow: hidden; }
-    .oc-panel-body {
-        @apply w-full min-h-0 flex-1 flex flex-col gap-4 overflow-y-auto pr-1;
-        overscroll-behavior: contain;
-        scrollbar-width: thin;
-        scrollbar-color: var(--tertiary-2) transparent;
-    }
-    .oc-panel-card p {
-        @apply text-slate-200 leading-relaxed;
-    }
-    .oc-panel-card code {
-        @apply font-mono text-sm px-3 py-2 rounded-xl break-all;
-        color: var(--tertiary-1);
-        background: rgba(0, 0, 0, .4);
-        border: 1px solid rgba(255, 255, 255, .1);
-    }
-
-
-    .oc-card-clickable { position: relative; }
-    .oc-card-link {
-        position: absolute;
-        inset: 0;
-        z-index: 1;
-        border-radius: inherit;
-    }
-    .oc-owner-link {
-        @apply font-medium transition;
-        color: var(--tertiary-1);
-        position: relative;
-        z-index: 2;
-    }
-    .oc-owner-link:hover { @apply underline; }
-
-
-    .oc-suggestions {
-        @apply absolute left-0 right-0 top-full mt-2 z-20 overflow-hidden rounded-xl;
-        background: var(--wf-veil);
-        border: 1px solid rgba(255, 255, 255, .12);
-        box-shadow: 0 20px 50px rgba(0, 0, 0, .5);
-    }
-    .oc-suggestion {
-        @apply w-full flex items-center gap-3 px-4 py-2.5 text-left cursor-pointer transition;
-    }
-    .oc-suggestion:hover, .oc-suggestion.is-active {
-        background: rgba(255, 255, 255, .06);
-    }
-    .oc-suggestion-emoji { @apply text-lg leading-none; }
-    .oc-suggestion-text { @apply min-w-0 flex-1; }
-    .oc-suggestion-name { @apply text-sm text-slate-100 truncate; }
-    .oc-suggestion-id { @apply font-mono text-xs text-slate-500 truncate; }
-
-    .oc-search-wrap { @apply relative flex-1 min-w-56; }
-    .oc-search-wrap .oc-input { @apply w-full; }
-
-    .oc-filter-toggle { @apply !px-5 !py-2.5 text-sm inline-flex items-center gap-2; }
-    .oc-filter-panel {
-        @apply mt-4 w-full max-w-3xl mx-auto p-5 rounded-2xl flex flex-col gap-5 text-left;
-        background: rgba(255, 255, 255, .04);
-        border: 1px solid rgba(255, 255, 255, .1);
-    }
-    .oc-filter-group { @apply flex flex-col gap-2; }
-    .oc-filter-legend { @apply text-xs font-semibold uppercase tracking-wider text-slate-400; }
-    .oc-filter-options { @apply flex flex-wrap gap-x-5 gap-y-2; }
-    .oc-check { @apply inline-flex items-center gap-2 text-sm text-slate-200 cursor-pointer select-none; }
-    .oc-check input { @apply w-4 h-4 accent-tertiary-1 cursor-pointer; }
-    .oc-check.is-disabled { @apply opacity-40 cursor-not-allowed; }
-    .oc-check.is-disabled input { @apply cursor-not-allowed; }
-    .oc-filter-actions { @apply flex justify-end; }
-
-
-    .oc-page { min-height: calc(100dvh - 4rem - 1px); }
-
-    .oc-legal {
-        @apply max-w-3xl mx-auto px-6 w-full flex-1;
-        padding-bottom: clamp(3rem, 6vw, 4.5rem);
-    }
-    .oc-legal h2 {
-        @apply font-display font-bold text-xl tracking-tight text-slate-100 mt-10;
-    }
-    .oc-legal h2:first-child { @apply mt-0; }
-    .oc-legal p { @apply mt-3 leading-relaxed text-slate-300; }
-    .oc-legal ul {
-        @apply mt-3 pl-6 flex flex-col gap-1.5 text-slate-300 leading-relaxed;
-        list-style: disc;
-    }
-    .oc-legal li::marker { color: color-mix(in srgb, var(--tertiary-1) 70%, transparent); }
-    .oc-legal a {
-        @apply underline;
-        color: var(--tertiary-1);
-        text-decoration-color: color-mix(in srgb, var(--tertiary-1) 40%, transparent);
-    }
-    .oc-legal a:hover { text-decoration-color: var(--tertiary-1); }
-    .oc-legal strong { @apply text-slate-100 font-semibold; }
-    .oc-legal code {
-        @apply font-mono text-sm px-1.5 py-0.5 rounded bg-white/10 text-tertiary-1;
-    }
-
-    .oc-profile {
-        @apply max-w-5xl mx-auto px-6 w-full flex-1 flex flex-col justify-center gap-8;
-        padding-top: clamp(2rem, 5vw, 3.5rem);
-        padding-bottom: clamp(3rem, 6vw, 4.5rem);
-    }
-    .oc-profile-hero {
-        @apply p-6 sm:p-8 rounded-2xl flex flex-col gap-5;
-        background: rgba(255, 255, 255, .05);
-        border: 1px solid rgba(255, 255, 255, .1);
-        backdrop-filter: blur(12px);
-    }
-    .oc-profile-head { @apply flex items-start gap-4 flex-wrap; }
-    .oc-profile-icon {
-        @apply w-16 h-16 shrink-0 rounded-2xl overflow-hidden flex items-center justify-center text-3xl;
-        background: rgba(255, 255, 255, .05);
-        border: 1px solid rgba(255, 255, 255, .1);
-    }
-    .oc-profile-title { @apply min-w-0 flex-1 flex flex-col gap-1.5; }
-    .oc-profile-title h1 {
-        @apply font-display font-extrabold tracking-tight text-2xl sm:text-3xl text-slate-100;
-    }
-    .oc-profile-title code { @apply font-mono text-xs text-slate-500; }
-    .oc-profile-kind {
-        @apply w-fit text-xs font-semibold px-2.5 py-0.5 rounded-full;
-        color: var(--tertiary-1);
-        background: color-mix(in srgb, var(--tertiary-3) 25%, transparent);
-        border: 1px solid color-mix(in srgb, var(--tertiary-1) 30%, transparent);
-    }
-    .oc-profile-owner { @apply flex flex-wrap items-center gap-1.5 text-sm text-slate-400; }
-    .oc-profile-desc { @apply text-base leading-relaxed text-slate-300; }
-    .oc-profile-action { @apply flex flex-wrap items-center gap-3; }
-    .oc-buy-hint { @apply mt-0 text-xs text-center leading-relaxed text-slate-500; }
-    .oc-dev-license {
-        @apply flex items-start gap-2.5 px-4 py-3 rounded-xl text-sm leading-relaxed text-slate-300;
-        background: color-mix(in srgb, var(--info-5) 30%, transparent);
-        border: 1px solid color-mix(in srgb, var(--info-3) 35%, transparent);
-    }
-    .oc-dev-license svg { @apply w-4 h-4 mt-0.5 shrink-0; color: var(--info-1); }
-    .oc-dev-license strong { @apply font-semibold text-slate-100; }
-    .oc-shorthands {
-        @apply flex flex-col gap-2 pt-4;
-        border-top: 1px solid rgba(255, 255, 255, .08);
-    }
-    .oc-shorthands-label { @apply text-xs font-semibold uppercase tracking-wider text-slate-500; }
-    .oc-shorthands-list { @apply flex flex-wrap gap-2; }
-    .oc-shorthand {
-        @apply inline-flex min-h-11 items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition text-slate-100;
-        background: rgba(255, 255, 255, .05);
-        border: 1px solid rgba(255, 255, 255, .12);
-    }
-    .oc-shorthand:hover {
-        @apply -translate-y-0.5;
-        background: color-mix(in srgb, var(--tertiary-1) 12%, transparent);
-        border-color: color-mix(in srgb, var(--tertiary-1) 35%, transparent);
-    }
-    .oc-shorthand svg { @apply w-4 h-4 shrink-0; color: var(--tertiary-1); }
-    .oc-contact {
-        color: var(--primary-5);
-        background-image: linear-gradient(90deg, var(--tertiary-1), var(--info-1));
-        border-color: transparent;
-    }
-    .oc-contact svg { color: var(--primary-5); }
-    .oc-contact:hover { background-image: linear-gradient(90deg, var(--tertiary-1), var(--info-1)); }
-    .oc-action-link { @apply inline-flex items-center justify-center text-center; }
-    .oc-profile-section { @apply flex flex-col gap-4; }
-    .oc-profile-h2 { @apply font-display font-bold text-lg text-slate-100; }
-    .oc-version-list { @apply flex flex-col gap-2; }
-    .oc-version {
-        @apply flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl;
-        background: rgba(255, 255, 255, .04);
-        border: 1px solid rgba(255, 255, 255, .1);
-    }
-    .oc-version-tag { @apply font-mono text-sm font-semibold text-slate-200; }
-    .oc-version-date { @apply text-xs text-slate-500 shrink-0; }
-
-    .oc-version-dl {
-        @apply inline-flex items-center justify-center shrink-0 cursor-pointer transition bg-transparent border-0 p-0;
-        color: var(--tertiary-1);
-    }
-    .oc-version-dl:hover { color: var(--info-1); }
-    .oc-version-dl svg { @apply w-4 h-4; }
-    .oc-version-dl[hidden] { display: none; }
-
-    .oc-version-center { @apply flex-1 flex items-center justify-center min-w-0 px-2; }
-    .oc-version-progress {
-        @apply w-24 max-w-full h-1 rounded-full overflow-hidden;
-        background: rgba(255, 255, 255, .1);
-    }
-    .oc-version-progress[hidden] { display: none; }
-    .oc-version-progress-bar {
-        @apply block h-full w-1/3 rounded-full;
-        background-image: linear-gradient(90deg, var(--tertiary-1), var(--info-1));
-        animation: oc-progress 1s ease-in-out infinite;
-    }
-    @keyframes oc-progress {
-        0% { transform: translateX(-120%); }
-        100% { transform: translateX(340%); }
-    }
-    .oc-version-status { @apply text-xs font-semibold text-center; }
-    .oc-version-status[hidden] { display: none; }
-    .oc-version-status.is-success { color: var(--success-1); }
-    .oc-version-status.is-error { color: var(--danger-1); }
-
-    .oc-muted { @apply text-sm text-slate-500; }
-    .oc-profile-empty { @apply max-w-xl mx-auto my-16; }
-
-    .oc-license-model { @apply flex flex-col gap-3; }
-    .oc-license-lifetime {
-        @apply flex items-start gap-4 px-5 py-4 rounded-2xl;
-        background: color-mix(in srgb, var(--tertiary-5) 30%, transparent);
-        border: 1px solid color-mix(in srgb, var(--tertiary-3) 40%, transparent);
-    }
-    .oc-license-mark {
-        @apply shrink-0 w-11 h-11 rounded-xl flex items-center justify-center;
-        color: var(--primary-5);
-        background-image: linear-gradient(135deg, var(--tertiary-1), var(--info-1));
-    }
-    .oc-license-mark svg { @apply w-6 h-6; }
-    .oc-license-title { @apply font-display font-semibold text-base text-slate-100; }
-    .oc-license-text { @apply mt-1 text-sm leading-relaxed text-slate-300; }
-    .oc-license-steps {
-        @apply grid gap-3 list-none p-0 m-0;
-        grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
-    }
-    .oc-license-step {
-        @apply relative flex flex-col gap-1 px-4 pt-5 pb-4 rounded-2xl overflow-hidden;
-        background: rgba(255, 255, 255, .04);
-        border: 1px solid rgba(255, 255, 255, .1);
-    }
-    .oc-license-step::before {
-        @apply absolute top-0 inset-x-0 h-0.5;
-        content: "";
-        background: color-mix(in srgb, var(--tertiary-1) 45%, transparent);
-    }
-    .oc-license-step.is-first {
-        background: color-mix(in srgb, var(--tertiary-5) 30%, transparent);
-        border-color: color-mix(in srgb, var(--tertiary-3) 45%, transparent);
-    }
-    .oc-license-step.is-first::before { background-image: linear-gradient(90deg, var(--tertiary-1), var(--info-1)); }
-    .oc-license-step-label { @apply text-xs font-semibold uppercase tracking-wider text-slate-400; }
-    .oc-license-step-price { @apply font-display font-bold text-3xl leading-none mt-1; color: var(--tertiary-1); }
-    .oc-license-step-price small { @apply text-base font-semibold ml-0.5; }
-    .oc-license-step-caption { @apply text-xs text-slate-500; }
-    .oc-license-step-term { @apply mt-2 text-sm leading-snug text-slate-200; }
-    .oc-license-rule { @apply text-xs leading-relaxed text-slate-500; }
-    .oc-license-summary { @apply text-xs text-center leading-relaxed text-slate-400; }
-    .oc-license-summary a { @apply font-semibold ml-1; }
-    .oc-license-offer { @apply text-xs text-center leading-relaxed text-slate-400; }
-    .oc-license-offer s { @apply ml-1 whitespace-nowrap text-slate-500; }
-    .oc-license-kept { @apply text-xs leading-relaxed text-slate-400; }
-    .oc-license-kept summary {
-        @apply cursor-pointer list-none text-center font-semibold;
-        color: var(--tertiary-1);
-    }
-    .oc-license-kept summary::-webkit-details-marker { display: none; }
-    .oc-license-kept[open] summary { @apply mb-3; }
-    .oc-license-status {
-        @apply flex items-start gap-2.5 px-4 py-3 rounded-xl text-sm leading-relaxed text-slate-300;
-        background: color-mix(in srgb, var(--success-5) 30%, transparent);
-        border: 1px solid color-mix(in srgb, var(--success-3) 35%, transparent);
-    }
-    .oc-license-status svg { @apply w-4 h-4 mt-0.5 shrink-0; color: var(--success-1); }
-    .oc-license-status.is-expired {
-        background: color-mix(in srgb, var(--warning-5) 30%, transparent);
-        border-color: color-mix(in srgb, var(--warning-3) 35%, transparent);
-    }
-    .oc-license-status.is-expired svg { color: var(--warning-1); }
-    .oc-version-lock { @apply inline-flex items-center justify-center shrink-0 text-slate-500; }
-    .oc-version-lock svg { @apply w-4 h-4; }
-    .oc-price-mark { @apply ml-0.5 text-[0.65em] align-super opacity-70; }
-    .oc-tax-hint { @apply text-slate-400; }
-    .oc-withdrawal {
-        @apply flex flex-col items-center gap-2 pt-4;
-        border-top: 1px solid rgba(255, 255, 255, .08);
-    }
-    .oc-withdrawal-status { @apply flex flex-wrap items-center justify-center gap-2 text-sm text-slate-300; }
-    .oc-withdraw svg { color: var(--warning-1); }
-    .oc-withdraw-retract { @apply cursor-pointer; }
-    .oc-panel-form { @apply text-left items-stretch; }
-    .oc-panel-form h3 { @apply font-bold text-[1.05rem] text-left text-slate-100; }
-    .oc-panel-form > p { @apply text-left; }
-    .oc-field { @apply flex flex-col gap-1.5 w-full text-left; }
-    .oc-field label { @apply text-xs font-semibold uppercase tracking-wider text-slate-400; }
-    .oc-input {
-        @apply w-full px-3.5 py-2.5 rounded-xl text-sm text-slate-100 outline-none transition;
-        background: rgba(0, 0, 0, .3);
-        border: 1px solid rgba(255, 255, 255, .12);
-    }
-    .oc-input:focus { border-color: color-mix(in srgb, var(--tertiary-1) 55%, transparent); }
-    .oc-checks { @apply flex flex-col gap-3 w-full; }
-    .oc-check { @apply flex gap-3 items-start text-left text-sm leading-relaxed text-slate-200 cursor-pointer; }
-    .oc-check input { @apply mt-1 shrink-0 w-4 h-4 cursor-pointer; accent-color: var(--tertiary-1); }
-    .oc-check-required { color: var(--warning-1); }
-    .oc-waiver-hint {
-        @apply text-xs leading-relaxed text-slate-400 text-left px-3 py-2.5 rounded-xl;
-        background: rgba(255, 255, 255, .03);
-        border: 1px dashed rgba(255, 255, 255, .12);
-    }
-    .oc-link-button { @apply self-start text-xs font-semibold underline underline-offset-2 cursor-pointer; color: var(--tertiary-1); }
-    .oc-panel-actions { @apply flex gap-2 justify-end w-full flex-wrap; }
-    .oc-contract {
-        @apply w-full flex flex-col gap-1 px-4 py-3 rounded-xl text-left text-sm;
-        background: rgba(255, 255, 255, .04);
-        border: 1px solid rgba(255, 255, 255, .1);
-    }
-    .oc-contract dt { @apply text-xs font-semibold uppercase tracking-wider text-slate-500; }
-    .oc-contract dd { @apply text-slate-100; }
-    .oc-form-error { @apply text-sm text-left; color: var(--danger-1); }
-    .oc-form-note { @apply text-sm text-left; color: var(--success-1); }
-    .oc-request { @apply flex flex-col gap-4; }
-    .oc-request-meta { @apply flex flex-wrap items-center gap-2 text-sm text-slate-400; }
-    .oc-request-actions { @apply flex flex-wrap gap-2; }
-    .oc-version-chip {
-        @apply font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0;
-        color: var(--info-1);
-        background: color-mix(in srgb, var(--info-5) 40%, transparent);
-        border: 1px solid color-mix(in srgb, var(--info-3) 40%, transparent);
-    }
-
-    .oc-badge-danger {
-        color: var(--danger-1);
-        background: color-mix(in srgb, var(--danger-5) 40%, transparent);
-        border: 1px solid color-mix(in srgb, var(--danger-3) 40%, transparent);
-    }
-    .oc-badge-discontinued {
-        @apply text-slate-300;
-        background: rgba(255, 255, 255, .06);
-        border: 1px solid rgba(255, 255, 255, .16);
-    }
-    .oc-owner-archived {
-        @apply text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full text-slate-400;
-        position: relative;
-        z-index: 2;
-        background: rgba(255, 255, 255, .06);
-        border: 1px solid rgba(255, 255, 255, .12);
-    }
-    .oc-availability, .oc-discontinued {
-        @apply flex items-start gap-2.5 px-4 py-3 rounded-xl text-sm leading-relaxed text-slate-300 text-left;
-    }
-    .oc-availability {
-        background: color-mix(in srgb, var(--danger-5) 30%, transparent);
-        border: 1px solid color-mix(in srgb, var(--danger-3) 35%, transparent);
-    }
-    .oc-availability svg { @apply w-4 h-4 mt-0.5 shrink-0; color: var(--danger-1); }
-    .oc-discontinued {
-        background: rgba(255, 255, 255, .04);
-        border: 1px solid rgba(255, 255, 255, .12);
-    }
-    .oc-discontinued svg { @apply w-4 h-4 mt-0.5 shrink-0 text-slate-400; }
-    .oc-initials {
-        @apply font-display font-bold text-xl tracking-wide text-slate-200 select-none;
-        background: linear-gradient(135deg, rgba(255, 255, 255, .12), rgba(255, 255, 255, .03));
-    }
-    .oc-profile-kind-archived {
-        @apply text-slate-300;
-        background: rgba(255, 255, 255, .06);
-        border-color: rgba(255, 255, 255, .16);
-    }
-    .oc-archived { border-style: dashed; }
-    .oc-version-security {
-        color: var(--warning-1);
-        background: color-mix(in srgb, var(--warning-5) 40%, transparent);
-        border-color: color-mix(in srgb, var(--warning-3) 40%, transparent);
-    }
-
-    .oc-checkout-card {
-        @apply max-w-2xl;
-        max-height: min(54rem, calc(100dvh - 2rem));
-        overflow: hidden;
-    }
-    .oc-checkout-head { @apply flex flex-col gap-1 shrink-0; }
-    .oc-checkout-head h3 { @apply outline-none; }
-    .oc-panel-card .oc-checkout-product { @apply text-sm text-slate-400; }
-    .oc-checkout-step { @apply flex flex-col gap-4 min-h-0 flex-1; }
-    .oc-checkout-step[hidden] { display: none; }
-    .oc-checkout-body {
-        @apply flex flex-col gap-4 min-h-0 flex-1 overflow-y-auto;
-        overscroll-behavior: contain;
-        scrollbar-width: thin;
-        scrollbar-color: var(--tertiary-2) transparent;
-    }
-    .oc-checkout-wait { @apply flex flex-col items-center gap-4 py-10; }
-    .oc-checkout-wait p { @apply text-sm text-slate-400; }
-    .oc-field-row { @apply grid gap-4; grid-template-columns: repeat(1, minmax(0, 1fr)); }
-    @media (min-width: 480px) { .oc-field-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    .oc-combo-list {
-        @apply mt-1 rounded-xl overflow-y-auto list-none p-0;
-        max-height: 11rem;
-        background: rgba(0, 0, 0, .3);
-        border: 1px solid rgba(255, 255, 255, .12);
-        scrollbar-width: thin;
-        scrollbar-color: var(--tertiary-2) transparent;
-    }
-    .oc-combo-list[hidden] { display: none; }
-    .oc-combo-list .oc-suggestion { @apply py-2 text-sm text-slate-200; }
-    .oc-combo-list .oc-suggestion[aria-selected="true"] { color: var(--tertiary-1); }
-    .oc-switch {
-        @apply grid grid-cols-2 gap-1 p-1 rounded-xl shrink-0;
-        background: rgba(0, 0, 0, .3);
-        border: 1px solid rgba(255, 255, 255, .12);
-    }
-    .oc-switch[hidden] { display: none; }
-    .oc-switch button { @apply min-h-10 px-3 rounded-lg text-sm font-semibold text-slate-400 cursor-pointer transition; }
-    .oc-switch button:hover { @apply text-slate-200; }
-    .oc-switch button.is-active {
-        color: var(--primary-5);
-        background-image: linear-gradient(90deg, var(--tertiary-1), var(--info-1));
-    }
-    .oc-panel-card .oc-checkout-notice {
-        @apply flex items-start gap-2.5 px-4 py-3 rounded-xl text-sm leading-relaxed text-slate-100 shrink-0;
-        background: color-mix(in srgb, var(--warning-5) 30%, transparent);
-        border: 1px solid color-mix(in srgb, var(--warning-3) 40%, transparent);
-    }
-    .oc-checkout-notice svg { @apply w-4 h-4 mt-0.5 shrink-0; color: var(--warning-1); }
-    .oc-checkout-summary { @apply grid gap-x-6 gap-y-1.5 shrink-0; grid-template-columns: repeat(1, minmax(0, 1fr)); }
-    .oc-checkout-summary div { @apply flex items-baseline justify-between gap-3 min-w-0; }
-    .oc-checkout-summary dd { @apply text-right; }
-    @media (min-width: 560px) {
-        .oc-checkout-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-        .oc-checkout-summary div { @apply flex-col items-start justify-start gap-0.5; }
-        .oc-checkout-summary dd { @apply text-left; }
-    }
-    .oc-panel-card .oc-checkout-sample { @apply text-xs text-slate-400 shrink-0; }
-    .oc-document {
-        @apply flex-1 min-h-48 overflow-y-auto px-5 py-4 rounded-xl text-sm leading-relaxed text-slate-200 text-left;
-        overscroll-behavior: contain;
-        background: rgba(0, 0, 0, .28);
-        border: 1px solid rgba(255, 255, 255, .12);
-        scrollbar-width: thin;
-        scrollbar-color: var(--tertiary-2) transparent;
-    }
-    .oc-document:focus-visible { outline: 2px solid var(--tertiary-1); outline-offset: 2px; }
-    .oc-document h1 { @apply font-display font-bold text-lg text-slate-100 mt-0 mb-3; }
-    .oc-document h2 { @apply font-display font-semibold text-base text-slate-100 mt-5 mb-2; }
-    .oc-document h3 { @apply font-semibold text-sm text-slate-100 mt-4 mb-1.5; }
-    .oc-panel-card .oc-document p { @apply my-2 text-slate-300; }
-    .oc-document ul, .oc-document ol { @apply my-2 pl-5 flex flex-col gap-1 text-slate-300; }
-    .oc-document ul { list-style: disc; }
-    .oc-document ol { list-style: decimal; }
-    .oc-document strong { @apply font-semibold text-slate-100; }
-    .oc-document a { @apply underline; color: var(--tertiary-1); }
-    .oc-document hr { @apply my-4 border-white/10; }
-    .oc-document blockquote { @apply my-2 pl-3 text-slate-400; border-left: 2px solid rgba(255, 255, 255, .16); }
-    .oc-document table { @apply my-3 w-full text-left text-xs border-collapse; }
-    .oc-document th, .oc-document td { @apply px-2 py-1.5 align-top border border-white/10; }
-    .oc-document th { @apply font-semibold text-slate-100 bg-white/5; }
-    .oc-panel-card .oc-document code {
-        @apply px-1 py-0.5 rounded text-xs border-0 break-words text-slate-200;
-        background: rgba(255, 255, 255, .08);
-    }
-    .oc-document pre { @apply my-2 p-3 rounded-lg overflow-x-auto text-xs; background: rgba(0, 0, 0, .35); }
-    .oc-panel-card .oc-document-title {
-        @apply mt-6 mb-2 pb-1 font-mono text-xs font-semibold uppercase tracking-wider text-slate-400 border-b border-white/10;
-    }
-    .oc-panel-card .oc-document-title:first-child { @apply mt-0; }
-    .oc-panel-card .oc-scroll-hint { @apply text-xs text-center shrink-0; color: var(--warning-1); }
-    .oc-scroll-hint[hidden] { display: none; }
-    .oc-checkout .oc-panel-actions { @apply shrink-0; }
-    @media (max-width: 639px) {
-        .oc-checkout { @apply p-0; }
-        .oc-checkout-card {
-            @apply max-w-none rounded-none border-0 p-5;
-            height: 100dvh;
-            max-height: 100dvh;
-        }
-        .oc-checkout-body { @apply pr-1; }
-        .oc-checkout-body .oc-document { @apply flex-none min-h-0 overflow-visible; }
-        .oc-checkout .oc-panel-actions { @apply flex-nowrap; }
-        .oc-checkout .oc-panel-actions .web-btn { @apply flex-1; }
-    }
-    .oc-panel-card .oc-form-error { color: var(--danger-1); }
-    .oc-panel-card .oc-form-note { color: var(--success-1); }
-}
 
 @layer base {
     .web :focus-visible { outline: 2px solid var(--tertiary-1); outline-offset: 3px; }
@@ -1347,11 +591,6 @@
     .docs-topbar-link { @apply min-h-11 inline-flex items-center; }
     .docs-version-menu { background: var(--wf-panel); box-shadow: var(--wf-shadow); }
     .docs-content :is(h1, h2, h3) { scroll-margin-top: 6rem; text-wrap: balance; }
-    .oc-card:focus-within { border-color: var(--tertiary-1); }
-    .oc-card-desc { @apply text-slate-300 leading-relaxed; }
-    .oc-entity-img:not([src]) { opacity: 0; }
-    .oc-buy { @apply min-h-11; }
-    .oc-back, .oc-login { @apply min-h-11 inline-flex items-center; }
 }
 
 @layer components {
@@ -1363,6 +602,5 @@
     @media (max-width: 767px) {
         .docs.docs-topbar-wrap .docs-topbar-links > a { display: none; }
         .docs-sidebar-external { @apply flex flex-col gap-1 pt-4 mt-4 border-t border-white/10; }
-        .docs-content { background: var(--wf-deep); }
     }
 }

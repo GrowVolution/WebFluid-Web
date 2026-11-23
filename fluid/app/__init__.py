@@ -77,7 +77,6 @@ def setup_ocean():
     from fluid.app.ocean import (
         handle_discovery as discovery,
         handle_robots as robots,
-        handle_terms as terms,
         handle_licensing as licensing
     )
     ocean_router.get("/")(discovery)
@@ -86,5 +85,4 @@ def setup_ocean():
         response_class=Response,
         methods=["GET", "HEAD"]
     )(robots)
-    ocean_router.get("/terms")(terms)
     ocean_router.get("/licensing")(licensing)

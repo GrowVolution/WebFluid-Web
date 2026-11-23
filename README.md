@@ -93,6 +93,12 @@ marketplace itself. WebFluid-Web renders Ocean's public-facing shell pages
 marketplace behaviour behind them is provided by the **`ocean`** additive and its
 dependencies.
 
+The `/terms` page is served by the **`compliance`** additive, which renders the host
+template `ocean/terms.html` (`COMPLIANCE_TERMS_TEMPLATE`) with the operator facts set in
+`COMPLIANCE_OPERATOR` in `fluid/config.py`; the host only adds the page's canonical and
+language links. The Ocean app therefore needs `compliance = 1` under `[additives]` and a
+`[compliance]` section with `COMPLIANCE_ENCRYPTION_KEY` (64 hex characters) in `ocean.ini`.
+
 ---
 
 ## Project layout
@@ -147,32 +153,11 @@ and the [documentation](https://docs.webfluid.dev).
 
 ## License
 
-WebFluid-Web is released under the **GNU General Public License v3 (GPL v3)**.
+The WebFluid-Web repo is maintained by **GrowVolution e.V.** and released under
+the [GNU General Public License 3.0](LICENSE).
 This is the GPL notice referenced in the site footer, and it covers the shared
 website foundation used by Ocean, the Landing Page, and the Documentation.
 
 The additives enabled by the Ocean app are distributed separately and under their
 own licenses. See the [Ocean Licensing page](https://ocean.webfluid.dev/licensing)
 for the authoritative, per-component overview.
-
-## Audit and deployment settings
-
-The source audit and validation results are recorded in [AUDIT.md](AUDIT.md).
-Fonts are served locally from `fluid/static/fonts/`, including their OFL license notices; visitors
-no longer contact Google Fonts. Documentation routes reject traversal, hidden paths and Windows
-path aliases before looking up a template.
-
-`PROXY_TRUSTED_HOSTS` defaults to loopback (`127.0.0.1,::1`). For the example Traefik deployment,
-set the actual ingress addresses/CIDRs in `fluid/_my_config.py`; trust only proxies allowed to
-connect to the application. Do not use `*` on an application port reachable by untrusted clients.
-The framework's request logger records paths only under `wf run -d` (`REQUEST_LOG_PATH`) and client
-addresses or user agents only on request (`REQUEST_LOG_CLIENT`, `REQUEST_LOG_USER_AGENT`). Peer
-operators must configure independent `PEERING_TRUSTED_REFERENCES` to endorse artifact provenance.
-Old versioned documentation continues to describe its original release.
-
-Install the npm workspace with `npm install` at the root; `package.json` keeps Vite on its patched
-releases (`^8.3.5`). `constraints.txt` records Python security floors and is applied by the image
-build; existing environments can apply it with `python -m pip install --upgrade -r constraints.txt`.
-
-The alpha `users` package now defaults to the neutral application signature `dev.example.app`.
-Set `USERS_MOBILE_SIGNATURES` explicitly to the deployed app identity before using app links.

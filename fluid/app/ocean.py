@@ -38,12 +38,14 @@ async def handle_discovery(
     )
 
 
-async def handle_terms(user: "User" = s.user_service.current_user):
-    ctx = FluidContext.current()
-    return await ctx.fluid.render(
-        "ocean/terms.html", user=user,
-        **seo_context(ctx, _ocean_url(ctx))
-    )
+def terms_context() -> dict:
+    ctx = FluidContext.try_current()
+    request = getattr(ctx, "request", None)
+    if request is None: return {}
+
+    url = ctx.fluid.config.get("COMPLIANCE_TERMS_URL", "/terms")
+    if request.url.path != url: return {}
+    return seo_context(ctx, _ocean_url(ctx), url)
 
 
 async def handle_licensing(user: "User" = s.user_service.current_user):

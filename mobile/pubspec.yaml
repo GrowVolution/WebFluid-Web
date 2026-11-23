@@ -1,0 +1,37 @@
+name: webfluid_ocean
+description: Combined ocean ecosystem application for advanced security features, wired against https://ocean.webfluid.dev.
+publish_to: none
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  compliance_sdk:
+    path: ../additives/compliance/flutter_sdk
+  stripe_connect_sdk:
+    path: ../additives/stripe-connect/flutter_sdk
+  stripe_sdk:
+    path: ../additives/stripe/flutter_sdk
+  users_admin_sdk:
+    path: ../additives/users-admin/flutter_sdk
+  users_apps_sdk:
+    path: ../additives/users-apps/flutter_sdk
+  users_chat_sdk:
+    path: ../additives/users-chat/flutter_sdk
+  users_jwt_sdk:
+    path: ../additives/users-jwt/flutter_sdk
+  users_sdk:
+    path: ../additives/users/flutter_sdk
+  users_sdk_vodozemac:
+    path: ../additives/users/flutter_sdk/packages/users_sdk_vodozemac
+  ocean_sdk:
+    path: ../additives/ocean/flutter_sdk
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

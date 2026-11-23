@@ -30,8 +30,10 @@ def prepare_fluid() -> Fluid:
         base_url = _fluid.config.get("OCEAN_URL", "https://ocean.webfluid.dev")
 
         from .app import ocean_router, setup_ocean
+        from .app.ocean import terms_context
         setup_ocean()
         _fluid.include_router(ocean_router)
+        _fluid.context_processor(terms_context)
 
     _fluid.jinja_env.globals["latest"] = _fluid.config["LATEST_VERSION"]
     _fluid.jinja_env.globals["home"] = base_url

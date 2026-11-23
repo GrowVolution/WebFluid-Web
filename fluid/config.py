@@ -62,6 +62,35 @@ class Config(MyConfig):
         "/licensing": "2026-11-04"
     }
 
+    COMPLIANCE_TERMS_TEMPLATE = "ocean/terms.html"
+    COMPLIANCE_OPERATOR = {
+        "name": "GrowVolution e.V.",
+        "brand": "WebFluid Ocean",
+        "legal_form": "eingetragener Verein",
+        "address": {
+            "line1": "Schöninger Straße 17",
+            "postal_code": "38173",
+            "city": "Sickte",
+            "country": "DE"
+        },
+        "email": "info@growvolution.org",
+        "phone": None,
+        "website": "https://growvolution.org",
+        "representative": None,
+        "register": None,
+        "vat_id": None,
+        "country": "DE"
+    }
+    COMPLIANCE_VARIABLES = {
+        "partner": "seller",
+        "threshold": 3,
+        "days": 30
+    }
+    STRIPE_TAX_CODES = {
+        "ocean.package.b2c": "txcd_10202000",
+        "ocean.package.b2b": "txcd_10202003"
+    }
+
     BABEL_DEFAULT_LOCALE = "en"
     BABEL_SUPPORTED_LOCALES = [BABEL_DEFAULT_LOCALE, "de"]
 

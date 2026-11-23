@@ -36,7 +36,7 @@
 </aside>
 
 {% macro link(href, icon, label) %}
-    <a href="{{ href }}" class="docs-nav-link {{ 'is-active' if path == href else '' }}">
+    <a href="{{ href }}" {% if path == href %}aria-current="page"{% endif %} class="docs-nav-link {{ 'is-active' if path == href else '' }}">
         {{ icon|safe }} {{ label }}
     </a>
 {% endmacro %}
@@ -51,7 +51,7 @@
         </summary>
         <div class="docs-nav-children">
             {% for href, label in elements.items() %}
-                <a href="{{ href }}" class="docs-nav-child {{ 'is-active' if path == href else '' }}">{{ label }}</a>
+                <a href="{{ href }}" {% if path == href %}aria-current="page"{% endif %} class="docs-nav-child {{ 'is-active' if path == href else '' }}">{{ label }}</a>
             {% endfor %}
         </div>
     </details>

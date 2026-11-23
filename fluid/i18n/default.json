@@ -1,4 +1,5 @@
 {
+  "HOME_NAV_DOCS": ["Docs", "Dokumentation"],
   "HOME_TITLE": [
   "WebFluid — the operating system for web apps",
   "WebFluid — das Betriebssystem für Web-Apps"
@@ -11,8 +12,8 @@
   ],
   "HOME_HERO_TITLE_FLOW": ["web applications", "Web-Anwendungen"],
   "HOME_HERO_SUB": [
-  "Build your next app from maintained building blocks instead of from zero. WebFluid runs on FastAPI and brings accounts, sign-in, payments and more as installable Additives – each with one maintainer, a written contract and docs your agents can follow.",
-  "Bau deine nächste App aus gepflegten Bausteinen statt von null. WebFluid läuft auf FastAPI und bringt Konten, Login, Zahlungen und mehr als installierbare Additives mit – jedes mit einem Maintainer, einem schriftlichen Contract und Docs, denen deine Agents folgen können."
+    "Build on FastAPI. Install the accounts, payments and messaging your app needs as maintained WebFluid Additives.",
+    "Entwickle mit FastAPI. Konten, Zahlungen und Chat bindest du als gepflegte WebFluid-Additives in deine App ein."
   ],
   "HOME_READ_DOCS": ["Read the docs", "Zur Dokumentation"],
   "HOME_VIEW_GITHUB": ["View on GitHub", "Auf GitHub ansehen"],
