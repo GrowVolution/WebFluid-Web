@@ -3,25 +3,25 @@ import 'package:users_sdk/users_sdk.dart';
 
 import 'aurora_theme.dart';
 
-abstract final class DemoConfig {
+abstract final class AppConfig {
   static const String host = String.fromEnvironment('USERS_HOST', defaultValue: 'https://ocean.webfluid.dev');
   static const String mobileSecret = String.fromEnvironment('USERS_MOBILE_SECRET');
   static const String signature = String.fromEnvironment(
     'USERS_SIGNATURE',
-    defaultValue: 'dev.webfluid.all_sdks.example',
+    defaultValue: 'dev.webfluid.ocean',
   );
   static const String _ssoRedirect = String.fromEnvironment(
     'USERS_SSO_REDIRECT',
-    defaultValue: 'dev.webfluid.all-sdks.example:/sso',
+    defaultValue: 'dev.webfluid.ocean:/sso',
   );
   static const bool allowInsecure = bool.fromEnvironment('USERS_INSECURE');
-  static const String _contact = String.fromEnvironment('USERS_CONTACT', defaultValue: 'pierre@growv-mail.org');
+  static const String _contact = String.fromEnvironment('USERS_CONTACT', defaultValue: '');
   static const String _language = String.fromEnvironment('USERS_LANG');
   static const String _theme = String.fromEnvironment('USERS_THEME');
   static const String _themeMode = String.fromEnvironment('USERS_THEME_MODE');
-  static const String appScheme = 'dev.webfluid.all-sdks.example';
+  static const String appScheme = 'dev.webfluid.ocean';
   static const String _merchantIdentifier = String.fromEnvironment('STRIPE_MERCHANT_IDENTIFIER');
-  static const bool stripeTestEnvironment = bool.fromEnvironment('STRIPE_TEST_ENVIRONMENT', defaultValue: true);
+  static const bool stripeTestEnvironment = bool.fromEnvironment('STRIPE_TEST_ENVIRONMENT');
 
   static String? get contact => _contact.isEmpty ? null : _contact;
 

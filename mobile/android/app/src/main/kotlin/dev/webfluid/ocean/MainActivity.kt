@@ -1,4 +1,4 @@
-package dev.webfluid.all_sdks.example
+package dev.webfluid.ocean
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

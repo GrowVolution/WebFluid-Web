@@ -51,7 +51,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="dev.webfluid.all-sdks.example" />
+                <data android:scheme="dev.webfluid.ocean" />
             </intent-filter>
         </activity>
         <meta-data

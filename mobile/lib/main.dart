@@ -10,7 +10,7 @@ import 'package:users_jwt_sdk/users_jwt_sdk.dart';
 import 'package:users_sdk/users_sdk.dart';
 import 'package:users_sdk_vodozemac/users_sdk_vodozemac.dart';
 
-import 'demo_config.dart';
+import 'app_config.dart';
 
 Future<void> main() async {
   runApp(const UsersHost());
@@ -18,7 +18,7 @@ Future<void> main() async {
 
   UsersSDK.onReset = () => UsersSDK.toast(UsersSDK.tr('TRANSFER_DONE'), type: UsersToastType.info);
 
-  DemoConfig.applyAppearance();
+  AppConfig.applyAppearance();
 
   while (true) {
     final userId = await UsersSDK.authenticate();
@@ -35,12 +35,12 @@ Future<void> main() async {
 @pragma('vm:entry-point')
 Future<bool> setup() async {
   final ready = await UsersSDK.init(
-    DemoConfig.host,
-    mobileSecret: DemoConfig.mobileSecret,
-    allowInsecure: DemoConfig.allowInsecure,
-    contact: DemoConfig.contact,
-    signature: DemoConfig.signature,
-    ssoRedirect: DemoConfig.ssoRedirect,
+    AppConfig.host,
+    mobileSecret: AppConfig.mobileSecret,
+    allowInsecure: AppConfig.allowInsecure,
+    contact: AppConfig.contact,
+    signature: AppConfig.signature,
+    ssoRedirect: AppConfig.ssoRedirect,
     push: UsersPushConfig.fromEnvironment(),
     ratchet: const VodozemacEngine(),
     background: setup,
@@ -50,9 +50,9 @@ Future<bool> setup() async {
 
   final payments = StripePayments(
     sheet: StripePaymentSheet(
-      merchantIdentifier: DemoConfig.merchantIdentifier,
-      urlScheme: DemoConfig.appScheme,
-      testEnvironment: DemoConfig.stripeTestEnvironment,
+      merchantIdentifier: AppConfig.merchantIdentifier,
+      urlScheme: AppConfig.appScheme,
+      testEnvironment: AppConfig.stripeTestEnvironment,
     ),
   );
   const merchant = StripeMerchant();

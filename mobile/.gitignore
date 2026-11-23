@@ -22,6 +22,7 @@ android/**/.cxx/
 android/key.properties
 android/**/*.keystore
 android/**/*.jks
+android/app/google-services.json
 
 ios/**/Pods/
 ios/**/.symlinks/

@@ -1,5 +1,7 @@
+import java.io.FileInputStream
 import java.net.URI
 import java.util.Base64
+import java.util.Properties
 
 plugins {
     id("com.android.application")
@@ -15,10 +17,15 @@ val dartDefines: Map<String, String> =
         ?.toMap()
         ?: emptyMap()
 
+val keyProperties = Properties().apply {
+    val file = rootProject.file("key.properties")
+    if (file.exists()) FileInputStream(file).use { load(it) }
+}
+
 val appLinkHost: String = URI(dartDefines["USERS_HOST"] ?: "https://ocean.webfluid.dev").host
 
 android {
-    namespace = "dev.webfluid.all_sdks.example"
+    namespace = "dev.webfluid.ocean"
     compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
@@ -29,7 +36,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "dev.webfluid.all_sdks.example"
+        applicationId = "dev.webfluid.ocean"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -37,9 +44,20 @@ android {
         manifestPlaceholders["appLinkHost"] = appLinkHost
     }
 
+    signingConfigs {
+        if (keyProperties.isNotEmpty()) {
+            create("release") {
+                keyAlias = keyProperties.getProperty("keyAlias")
+                keyPassword = keyProperties.getProperty("keyPassword")
+                storeFile = file(keyProperties.getProperty("storeFile"))
+                storePassword = keyProperties.getProperty("storePassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
 }

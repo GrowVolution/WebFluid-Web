@@ -78,11 +78,11 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>dev.webfluid.all-sdks.example</string>
+			<string>dev.webfluid.ocean</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>users-sdk</string>
-				<string>dev.webfluid.all-sdks.example</string>
+				<string>dev.webfluid.ocean</string>
 			</array>
 		</dict>
 	</array>
