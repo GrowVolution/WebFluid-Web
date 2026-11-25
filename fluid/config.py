@@ -90,6 +90,8 @@ class Config(MyConfig):
         "ocean.package.b2c": "txcd_10202000",
         "ocean.package.b2b": "txcd_10202003"
     }
+    STRIPE_CONNECT_FEE_VAT = 0.19
+    STRIPE_CONNECT_FEE_VAT_ENABLED = True
 
     BABEL_DEFAULT_LOCALE = "en"
     BABEL_SUPPORTED_LOCALES = [BABEL_DEFAULT_LOCALE, "de"]

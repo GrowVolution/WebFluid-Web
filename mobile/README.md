@@ -28,20 +28,20 @@ adb reverse tcp:8000 tcp:8000
 flutter run --dart-define=USERS_HOST=http://localhost:8000 --dart-define=USERS_INSECURE=true --dart-define=USERS_MOBILE_SECRET=<secret>
 ```
 
-| Define                       | Default                              | Purpose                                              |
-|------------------------------|--------------------------------------|------------------------------------------------------|
-| `USERS_HOST`                 | `https://ocean.webfluid.dev`         | Server origin; also the Android app-link host        |
-| `USERS_MOBILE_SECRET`        | —                                    | The server's `MOBILE_SECRET` (required)              |
-| `USERS_INSECURE`             | `false`                              | Allow `http` and self-signed certificates            |
-| `USERS_SIGNATURE`            | `dev.webfluid.ocean`                 | App signature, listed in `USERS_MOBILE_SIGNATURES`   |
-| `USERS_SSO_REDIRECT`         | `dev.webfluid.ocean:/sso`            | SSO redirect (empty hides SSO)                       |
-| `USERS_CONTACT`              | —                                    | Contact on the failure screen (empty hides it)       |
-| `USERS_LANG`                 | system                               | `en` or `de`                                         |
-| `USERS_THEME`                | `webfluid`                           | `webfluid` or the bundled `aurora`                   |
-| `USERS_THEME_MODE`           | `system`                             | `system`, `light` or `dark`                          |
-| `STRIPE_MERCHANT_IDENTIFIER` | —                                    | Apple Pay merchant id (empty: no Apple Pay)          |
-| `STRIPE_TEST_ENVIRONMENT`    | `false`                              | Google Pay test environment                          |
-| `USERS_FCM_*`                | —                                    | Push messages: `USERS_FCM_API_KEY`, `_APP_ID`, `_SENDER_ID`, `_PROJECT_ID`, or `USERS_FCM_NATIVE=true` for the native Firebase files |
+| Define                       | Default                      | Purpose                                                                                                                              |
+|------------------------------|------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| `USERS_HOST`                 | `https://ocean.webfluid.dev` | Server origin; also the Android app-link host                                                                                        |
+| `USERS_MOBILE_SECRET`        | —                            | The server's `MOBILE_SECRET` (required)                                                                                              |
+| `USERS_INSECURE`             | `false`                      | Allow `http` and self-signed certificates                                                                                            |
+| `USERS_SIGNATURE`            | `dev.webfluid.ocean`         | App signature, listed in `USERS_MOBILE_SIGNATURES`                                                                                   |
+| `USERS_SSO_REDIRECT`         | `dev.webfluid.ocean:/sso`    | SSO redirect (empty hides SSO)                                                                                                       |
+| `USERS_CONTACT`              | —                            | Contact on the failure screen (empty hides it)                                                                                       |
+| `USERS_LANG`                 | system                       | `en` or `de`                                                                                                                         |
+| `USERS_THEME`                | `webfluid`                   | `webfluid` or the bundled `aurora`                                                                                                   |
+| `USERS_THEME_MODE`           | `system`                     | `system`, `light` or `dark`                                                                                                          |
+| `STRIPE_MERCHANT_IDENTIFIER` | —                            | Apple Pay merchant id (empty: no Apple Pay)                                                                                          |
+| `STRIPE_TEST_ENVIRONMENT`    | `false`                      | Google Pay test environment                                                                                                          |
+| `USERS_FCM_*`                | —                            | Push messages: `USERS_FCM_API_KEY`, `_APP_ID`, `_SENDER_ID`, `_PROJECT_ID`, or `USERS_FCM_NATIVE=true` for the native Firebase files |
 
 ## Host configuration
 
@@ -57,11 +57,11 @@ flutter run --dart-define=USERS_HOST=http://localhost:8000 --dart-define=USERS_I
 
 ## How it is configured
 
-| Platform | Setting                                                                                                                                                                                                                                                                                         |
-|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Platform | Setting                                                                                                                                                                                                                                                                              |
+|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Android  | `applicationId` `dev.webfluid.ocean`, `MainActivity` is a `FlutterFragmentActivity` (Stripe), Material Components themes, core-library desugaring and the `ActionBroadcastReceiver` (notifications), `READ_MEDIA_IMAGES` / `READ_EXTERNAL_STORAGE` (≤ 32) for the gallery permission |
-| Android  | App-link intent filter for `https://<USERS_HOST>/users/app/` (`autoVerify`), `users-sdk` scheme, SSO callback activity, Flutter deep linking off                                                                                                                                                |
-| iOS      | Bundle id `dev.webfluid.ocean`, Associated Domains `applinks:$(APP_LINK_HOST)` (set in `Flutter/*.xcconfig`), URL types `users-sdk` and `dev.webfluid.ocean`, Flutter deep linking off                                                                                    |
+| Android  | App-link intent filter for `https://<USERS_HOST>/users/app/` (`autoVerify`), `users-sdk` scheme, SSO callback activity, Flutter deep linking off                                                                                                                                     |
+| iOS      | Bundle id `dev.webfluid.ocean`, Associated Domains `applinks:$(APP_LINK_HOST)` (set in `Flutter/*.xcconfig`), URL types `users-sdk` and `dev.webfluid.ocean`, Flutter deep linking off                                                                                               |
 
 The [Users SDK platform guide](../additives/users/flutter_sdk/.agents/references/platform-setup.md) describes the native configuration.
 

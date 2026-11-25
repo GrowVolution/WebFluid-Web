@@ -21,4 +21,3 @@ messages.pot
 tailwind.css
 _my_config.py
 *.db
-package-lock.json
